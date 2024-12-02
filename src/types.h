@@ -12,11 +12,15 @@
  * Enumeration with expected INS of APDU commands.
  */
 typedef enum {
-    VERIFY_ADDRESS = 0x00,       /// verify address
-    GET_PUBLIC_KEY = 0x01,       /// public key of corresponding BIP32 path
-    GET_VERSION = 0x03,          /// version of the application
-    GET_APP_NAME = 0x04,         /// name of the application
-    SIGN_SIMPLE_TRANSFER = 0x06  /// sign simple transfer with BIP32 path
+    VERIFY_ADDRESS = 0x00,                  /// verify address
+    GET_PUBLIC_KEY = 0x01,                  /// public key of corresponding BIP32 path
+    GET_VERSION = 0x03,                     /// version of the application
+    GET_APP_NAME = 0x04,                    /// name of the application
+    SIGN_SIMPLE_TRANSFER = 0x06,            /// sign simple transfer with BIP32 path
+    SIGN_SIMPLE_TRANSFER_WITH_MEMO = 0x07,  /// sign simple transfer with memo with BIP32 path
+    SIGN_TRANSFER_WITH_SCHEDULE = 0x08,     /// sign transfer with schedule with BIP32 path
+    SIGN_TRANSFER_WITH_SCHEDULE_AND_MEMO =
+        0x09,  /// sign transfer with schedule and memo with BIP32 path
 } command_e;
 /**
  * Enumeration with parsing state.
