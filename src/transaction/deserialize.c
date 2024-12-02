@@ -27,8 +27,7 @@
 #include "ledger_assert.h"
 #endif
 
-// TODO: EDIT THIS FUNCTION
-parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+parser_status_e header_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
     LEDGER_ASSERT(buf != NULL, "NULL buf");
     LEDGER_ASSERT(tx != NULL, "NULL tx");
 
@@ -60,6 +59,15 @@ parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx
     // Skip expiration (8 bytes)
     if (!buffer_seek_cur(buf, 8)) {
         return PARSING_ERROR;
+    }
+
+    return PARSING_OK;
+}
+
+parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+    parser_status_e status = header_deserialize(buf, tx);
+    if (status != PARSING_OK) {
+        return status;
     }
 
     // Transaction type (1 byte)
