@@ -62,7 +62,8 @@ typedef struct {
     union {
         simple_transfer_t simple_transfer;
         simple_transfer_with_memo_t simple_transfer_with_memo;
-        // Add other transaction types here as needed
+        transfer_with_schedule_t transfer_with_schedule;
+        // TODO: Add other transaction types here as needed
     } transaction;
     uint8_t m_hash[32];                  /// message hash digest
     uint8_t signature[MAX_DER_SIG_LEN];  /// transaction signature encoded in DER
