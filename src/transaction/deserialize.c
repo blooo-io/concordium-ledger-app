@@ -88,3 +88,8 @@ parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx
 
     return PARSING_OK;
 }
+
+// TODO: implement this
+parser_status_e transfer_with_schedule_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+    return PARSING_OK;
+}

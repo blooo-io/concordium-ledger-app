@@ -23,3 +23,7 @@
  *
  */
 int handler_sign_simple_transfer(buffer_t *cdata, uint8_t chunk, bool more);
+
+// TODO: implement this
+// TODO: add docs
+int handler_sign_transfer_with_schedule(buffer_t *cdata, uint8_t chunk, bool more);

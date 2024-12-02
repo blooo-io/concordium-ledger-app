@@ -287,4 +287,8 @@ int ui_display_pubkey() {
     ux_flow_init(0, ux_display_public_key_flow, NULL);
     return 0;
 }
+// TODO: implement this
+int ui_display_transfer_with_schedule() {
+    return 0;
+}
 #endif

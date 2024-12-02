@@ -42,3 +42,7 @@ parser_status_e header_deserialize(buffer_t *buf, transaction_ctx_t *tx);
  *         - AMOUNT_PARSING_ERROR if amount parsing fails
  */
 parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx);
+
+// TODO: implement this
+// TODO: add docs
+parser_status_e transfer_with_schedule_deserialize(buffer_t *buf, transaction_ctx_t *tx);
