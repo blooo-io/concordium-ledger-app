@@ -79,7 +79,7 @@ int handler_sign_transfer_with_schedule(buffer_t *cdata, uint8_t chunk, bool mor
                 return io_send_sw(SW_TX_PARSING_FAIL);
             }
             // TODO: add a specific SW for wrong type
-            if (G_context.tx_info.type != TRANSACTION_TYPE_SIMPLE_TRANSFER) {
+            if (G_context.tx_info.type != TRANSACTION_TYPE_TRANSFER_WITH_SCHEDULE) {
                 return io_send_sw(SW_BAD_STATE);
             }
 
