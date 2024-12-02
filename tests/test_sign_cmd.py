@@ -1,8 +1,15 @@
 import pytest
 
 from application_client.boilerplate_transaction import Transaction
-from application_client.boilerplate_command_sender import BoilerplateCommandSender, Errors, InsType
-from application_client.boilerplate_response_unpacker import unpack_get_public_key_response, unpack_sign_tx_response
+from application_client.boilerplate_command_sender import (
+    BoilerplateCommandSender,
+    Errors,
+    InsType,
+)
+from application_client.boilerplate_response_unpacker import (
+    unpack_get_public_key_response,
+    unpack_sign_tx_response,
+)
 from ragger.error import ExceptionRAPDU
 from ragger.navigator import NavInsID
 from utils import check_signature_validity
@@ -24,7 +31,7 @@ def test_sign_tx_simple_transfer(backend, scenario_navigator):
     # _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
 
     # Create the transaction that will be sent to the device for signing
-    transaction = '20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da70320a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7ffffffffffffffff'
+    transaction = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da70320a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7ffffffffffffffff"
     transaction = bytes.fromhex(transaction)
 
     # Send the sign device instruction.
@@ -38,9 +45,29 @@ def test_sign_tx_simple_transfer(backend, scenario_navigator):
     # The device as yielded the result, parse it and ensure that the signature is correct
     response = client.get_async_response().data
     response_hex = response.hex()
-    print('response', response_hex)
-    assert response_hex == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
+    print("response", response_hex)
+    assert (
+        response_hex
+        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
+    )
     # assert check_signature_validity(public_key, der_sig, transaction)
+
+
+def test_sign_tx_with_schedule(backend, scenario_navigator):
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+    ins_type = InsType.SIGN_TRANSFER_WITH_SCHEDULE
+    transaction = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da71320a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7050000017a396883d90000000005f5e1000000017a396883d90000000005f5e1000000017a396883d90000000005f5e1000000017a396883d90000000005f5e1000000017a396883d90000000005f5e100"
+    with client.sign_tx(path=path, tx_type_ins=ins_type, transaction=transaction):
+        # Validate the on-screen request by performing the navigation appropriate for this device
+        scenario_navigator.review_approve()
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert (
+        response_hex
+        == "e22fa38f78a79db71e84376c4eec2382166cdc412994207e7631b0ba3828f069b17b6f30351a64c50e5efacec3fe25161e9f7131e0235cd740739b24e0b063089000"
+    )
 
 
 # # In this test we send to the device a transaction to trig a blind-signing flow
