@@ -36,9 +36,9 @@
 #define MAX_BIP32_PATH_SUPPORTED 8
 
 /**
- * Exponent used to convert mCCD to CCD unit (N CCD = N * 10^3 mCCD).
+ * Exponent used to convert mCCD to CCD unit (N CCD = N * 10^6 mCCD).
  */
-#define EXPONENT_SMALLEST_UNIT 3
+#define EXPONENT_SMALLEST_UNIT 6
 
 /**
  * Hardened offset for BIP32 path.

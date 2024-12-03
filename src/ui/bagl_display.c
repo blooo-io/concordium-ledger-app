@@ -36,6 +36,7 @@
 #include "../transaction/types.h"
 #include "../menu.h"
 #include "../helper/util.h"
+#include "../helper/time.h"
 
 static action_validate_cb g_validate_callback;
 static char g_amount[30];
@@ -45,6 +46,44 @@ static char g_recipient_address[57];
 static char g_public_key[65];
 static char g_public_key_title[36];
 static char g_bip32_path_string[MAX_SERIALIZED_BIP32_PATH_LENGTH + 1];
+static char g_release_time[25];
+
+// // GENERIC DISPLAY ATTEMPT
+// // this is a generic display flow that can be used to display any number of steps
+// UX_FLOW(dynamic_flow,
+//         &step_welcome,
+
+//         &step_upper_delimiter,  // A special step that serves as the upper delimiter. It won't
+//         print
+//                                 // anything on the screen.
+//         &step_generic,          // The generic step that will actually display stuff on the
+//         screen. &step_lower_delimiter,  // A special step that serves as the lower delimiter. It
+//         won't print
+//                                 // anything on the screen.
+
+//         &step_quit,
+//         FLOW_LOOP);
+
+// // Note we're using UX_STEP_INIT because this step won't display anything.
+// UX_STEP_INIT(step_upper_delimiter, NULL, NULL, {
+//     // This function will be detailed later on.
+//     display_next_state(true);
+// });
+
+// UX_STEP_NOCB(step_generic,
+//              bnnn_paging,
+//              {
+//                  .title = global.title,
+//                  .text = global.text,
+//              });
+
+// // Note we're using UX_STEP_INIT because this step won't display anything.
+// UX_STEP_INIT(step_lower_delimiter, NULL, NULL, {
+//     // This function will be detailed later on.
+//     display_next_state(false);
+// });
+
+// //////////////////////////
 
 // Validate/Invalidate public key and go back to home
 static void ui_action_validate_pubkey(bool choice) {
@@ -287,8 +326,71 @@ int ui_display_pubkey() {
     ux_flow_init(0, ux_display_public_key_flow, NULL);
     return 0;
 }
-// TODO: implement this
+
+// Step with icon and text
+UX_STEP_NOCB(ux_display_review_transfer_with_schedule_step,
+             pnn,
+             {
+                 &C_icon_eye,
+                 "Transfer with",
+                 "Schedule",
+             });
+// Step with title/text for release time
+UX_STEP_NOCB(ux_display_release_time_step,
+             bnnn_paging,
+             {.title = "Release Time", .text = g_release_time});
+UX_FLOW(ux_display_transfer_with_schedule_flow,
+        &ux_display_review_transfer_with_schedule_step,
+        &ux_display_sender_address_step,
+        &ux_display_recipient_address_step,
+        &ux_display_release_time_step,
+        &ux_display_amount_step,
+        &ux_display_approve_step,
+        &ux_display_reject_step);
+
 int ui_display_transfer_with_schedule() {
+    if (G_context.req_type != CONFIRM_TRANSACTION || G_context.state != STATE_PARSED) {
+        G_context.state = STATE_NONE;
+        return io_send_sw(SW_BAD_STATE);
+    }
+
+    // Format the recipient address
+    if (address_to_base58(G_context.tx_info.transaction.transfer_with_schedule.recipient,
+                          ADDRESS_LEN,
+                          g_recipient_address,
+                          sizeof(g_recipient_address)) == -1) {
+        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
+    }
+    // Format the sender address
+    if (address_to_base58(G_context.tx_info.transaction.transfer_with_schedule.sender,
+                          ADDRESS_LEN,
+                          g_sender_address,
+                          sizeof(g_sender_address)) == -1) {
+        return io_send_sw(SW_DISPLAY_ADDRESS_FAIL);
+    }
+
+    // Format the first pair
+    uint8_t index = 0;
+    //// Format the amount
+    memset(g_amount, 0, sizeof(g_amount));
+    char amount[30] = {0};
+    if (!format_fpu64(amount,
+                      sizeof(amount),
+                      G_context.tx_info.transaction.transfer_with_schedule.pairs[index].value,
+                      EXPONENT_SMALLEST_UNIT)) {
+        return io_send_sw(SW_DISPLAY_AMOUNT_FAIL);
+    }
+    snprintf(g_amount, sizeof(g_amount), "CCD %.*s", sizeof(amount), amount);
+    // TODO: FIX THE release time, it should show: 2021-06-23 15:05:28
+    //// Format the release time
+    formatReleaseTime(
+        G_context.tx_info.transaction.transfer_with_schedule.pairs[index].raw_release_time,
+        g_release_time,
+        sizeof(g_release_time));
+
+    g_validate_callback = &ui_action_validate_transaction;
+
+    ux_flow_init(0, ux_display_transfer_with_schedule_flow, NULL);
     return 0;
 }
 #endif

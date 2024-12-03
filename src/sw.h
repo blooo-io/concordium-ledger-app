@@ -96,3 +96,7 @@
  * Status word for invalid governance path.
  */
 #define SW_INVALID_PATH 0xB011
+/**
+ * Status word for buffer overflow.
+ */
+#define SW_BUFFER_OVERFLOW 0xB012

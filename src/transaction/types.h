@@ -36,6 +36,7 @@ typedef struct {
 } simple_transfer_with_memo_t;
 typedef struct {
     uint64_t raw_release_time;
+    char release_time[25];
     uint64_t value;
 } pairs_t;
 
