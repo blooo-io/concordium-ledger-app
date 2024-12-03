@@ -54,3 +54,11 @@ int ui_display_simple_transfer(void);
  *
  */
 int ui_display_pubkey(void);
+
+/**
+ * Display transfer with schedule information on the device and ask confirmation to sign.
+ *
+ * @return 0 if success, negative integer otherwise.
+ *
+ */
+int ui_display_transfer_with_schedule(void);

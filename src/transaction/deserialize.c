@@ -27,8 +27,7 @@
 #include "ledger_assert.h"
 #endif
 
-// TODO: EDIT THIS FUNCTION
-parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+parser_status_e header_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
     LEDGER_ASSERT(buf != NULL, "NULL buf");
     LEDGER_ASSERT(tx != NULL, "NULL tx");
 
@@ -62,6 +61,15 @@ parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx
         return PARSING_ERROR;
     }
 
+    return PARSING_OK;
+}
+
+parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+    parser_status_e status = header_deserialize(buf, tx);
+    if (status != PARSING_OK) {
+        return status;
+    }
+
     // Transaction type (1 byte)
     if (!buffer_read_u8(buf, &tx->type)) {
         return TYPE_PARSING_ERROR;
@@ -76,6 +84,49 @@ parser_status_e simple_transfer_deserialize(buffer_t *buf, transaction_ctx_t *tx
     // Amount (8 bytes)
     if (!buffer_read_u64(buf, &tx->transaction.simple_transfer.value, BE)) {
         return AMOUNT_PARSING_ERROR;
+    }
+
+    return PARSING_OK;
+}
+
+// TODO: implement this
+parser_status_e transfer_with_schedule_deserialize(buffer_t *buf, transaction_ctx_t *tx) {
+    parser_status_e status = header_deserialize(buf, tx);
+    if (status != PARSING_OK) {
+        return status;
+    }
+
+    // Transaction type (1 byte)
+    if (!buffer_read_u8(buf, &tx->type)) {
+        return TYPE_PARSING_ERROR;
+    }
+    // Recipient address (32 bytes)
+    tx->transaction.transfer_with_schedule.recipient = (uint8_t *) (buf->ptr + buf->offset);
+    if (!buffer_seek_cur(buf, ADDRESS_LEN)) {
+        return RECIPIENT_PARSING_ERROR;
+    }
+
+    // Number of pairs (1 byte)
+    if (!buffer_read_u8(buf, &tx->transaction.transfer_with_schedule.number_of_pairs)) {
+        return PARSING_ERROR;
+    }
+    // Check if the number of pair is supported
+    if (tx->transaction.transfer_with_schedule.number_of_pairs > MAX_NUMBER_OF_PAIRS) {
+        return TOO_MANY_PAIRS_ERROR;
+    }
+
+    // Pairs (variable length)
+    for (size_t i = 0; i < tx->transaction.transfer_with_schedule.number_of_pairs; i++) {
+        //// Release time UTC (8 bytes)
+        if (!buffer_read_u64(buf,
+                             &tx->transaction.transfer_with_schedule.pairs[i].raw_release_time,
+                             BE)) {
+            return RELEASE_TIME_PARSING_ERROR;
+        }
+        //// Amount (8 bytes)
+        if (!buffer_read_u64(buf, &tx->transaction.transfer_with_schedule.pairs[i].value, BE)) {
+            return AMOUNT_PARSING_ERROR;
+        }
     }
 
     return PARSING_OK;
