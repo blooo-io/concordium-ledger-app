@@ -28,7 +28,7 @@ int handler(uint8_t INS,
             handleSignTransfer(cdata, flags);
             break;
         case INS_SIGN_TRANSFER_WITH_MEMO:
-            handleSignTransferWithMemo(cdata, p1, lc, flags, isInitialCall);
+            handleSignTransferWithMemo(cdata, p1, lc, flags);
             break;
         case INS_SIGN_TRANSFER_WITH_SCHEDULE:
             handleSignTransferWithSchedule(cdata, p1, flags, isInitialCall);

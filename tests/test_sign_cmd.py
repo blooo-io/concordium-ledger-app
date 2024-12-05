@@ -92,7 +92,7 @@ def test_sign_tx_simple_transfer_new_path(
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
 # TODO: fix this test
-# @pytest.mark.active_test_scope
+@pytest.mark.active_test_scope
 def test_sign_tx_simple_transfer_with_memo_legacy_path(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
