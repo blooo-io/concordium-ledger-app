@@ -38,9 +38,8 @@ void finishMemo() {
 void handleSignTransferWithMemo(uint8_t *cdata,
                                 uint8_t p1,
                                 uint8_t dataLength,
-                                volatile unsigned int *flags,
-                                bool isInitialCall) {
-    if (isInitialCall) {
+                                volatile unsigned int *flags) {
+    if (p1 == P1_INITIAL_WITH_MEMO) {
         ctx->state = TX_TRANSFER_INITIAL;
     }
 

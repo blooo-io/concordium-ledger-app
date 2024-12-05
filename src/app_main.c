@@ -108,6 +108,8 @@ void app_main() {
         // uint8_t *cdata = G_io_apdu_buffer + OFFSET_CDATA;
 
         bool isInitialCall = false;
+        PRINTF("km------------global_tx_state.currentInstruction: %d\n",
+               global_tx_state.currentInstruction);
         if (global_tx_state.currentInstruction == -1) {
             explicit_bzero(&global_tx_state, sizeof(global_tx_state));
             global_tx_state.currentInstruction = (int) cmd.ins;
