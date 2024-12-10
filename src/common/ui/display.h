@@ -1,11 +1,7 @@
-#ifndef _CBOR_H_
-#define _CBOR_H_
+#pragma once
+#ifdef HAVE_BAGL
 
 #include "ux.h"
-
-#endif
-
-#ifdef HAVE_BAGL
 
 extern const ux_flow_step_t ux_display_memo_step_nocb;
 extern const ux_flow_step_t ux_sign_flow_account_sender_view;
