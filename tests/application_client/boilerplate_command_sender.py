@@ -405,6 +405,8 @@ class BoilerplateCommandSender:
     def sign_configure_baker(
         self,
         transaction: bytes,
+        self,
+        transaction: bytes,
         bitmap: bytes,
         aggregation_key: bytes = b"",
     ) -> Generator[None, None, None]:
@@ -629,6 +631,7 @@ class BoilerplateCommandSender:
         transaction_fee: bool = False,
         baking_reward: bool = False,
         finalization_reward: bool = False,
+        is_called_first: bool = True,
         is_called_first: bool = True,
     ) -> Generator[None, None, None]:
         serialized_commission_rates = b""
