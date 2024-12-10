@@ -35,6 +35,19 @@ class P1(IntEnum):
     # Basic P1 for all instructions
     P1_NONE = 0x00
 
+    # Parameter 1 for credential deployment
+    P1_INITIAL_PACKET = 0x00  # Sent for 1st packet of the transfer
+    P1_VERIFICATION_KEY_LENGTH = 0x0A
+    P1_VERIFICATION_KEY = 0x01  # Sent for packets containing a verification key
+    P1_SIGNATURE_THRESHOLD = 0x02  # Sent for packet with signature threshold etc
+    P1_AR_IDENTITY = 0x03  # Sent for aridentity/encidcredpubshares pair
+    P1_CREDENTIAL_DATES = 0x04  # Sent for credential valid to/create at dates
+    P1_ATTRIBUTE_TAG = 0x05  # Sent for attribute tag and value length
+    P1_ATTRIBUTE_VALUE = 0x06  # Sent for attribute value
+    P1_LENGTH_OF_PROOFS = 0x07  # Sent for byte length of proofs
+    P1_PROOFS = 0x08  # Sent for proof bytes
+    P1_NEW_OR_EXISTING = 0x09  # Sent for new/existing credential flag
+
 
 class P2(IntEnum):
     # Parameter 2 for sign for GET_PUBLIC_KEY.
@@ -48,6 +61,13 @@ class P2(IntEnum):
     # P2_LAST = 0x00
     # # Parameter 2 for more APDU to receive.
     # P2_MORE = 0x80
+    # Parameter 2 for credential deployment
+    P2_CREDENTIAL_INITIAL = 0x00  # Initial credential data
+    P2_CREDENTIAL_CREDENTIAL_INDEX = 0x01  # Credential index
+    P2_CREDENTIAL_CREDENTIAL = 0x02  # Credential data
+    P2_CREDENTIAL_ID_COUNT = 0x03  # Number of credential IDs
+    P2_CREDENTIAL_ID = 0x04  # Credential ID
+    P2_THRESHOLD = 0x05  # Threshold value
 
 
 class InsType(IntEnum):
@@ -88,6 +108,7 @@ class Errors(IntEnum):
     SW_SIGNATURE_FAIL = 0xB008
 
 
+# pylint: disable=too-many-public-methods
 class BoilerplateCommandSender:
     def __init__(self, backend: BackendInterface) -> None:
         self.backend = backend
@@ -378,6 +399,148 @@ class BoilerplateCommandSender:
     #     ) as response:
     #         yield response
 
+    CONFIGURE_BAKER_HEADER = (
+        "08000004510000000000000000000000000000000000000002000000000000000020"
+        "a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000"
+        "000000000a0000000000000064000000290000000063de5da719"
+    )
+
+    @contextmanager
+    def sign_configure_baker(
+        self,
+        transaction: bytes,
+        bitmap: bytes,
+        aggregation_key: bytes = b"",
+    ) -> Generator[None, None, None]:
+
+        self._configure_baker_part_0(bitmap)
+
+        if aggregation_key:
+            # Second exchange - using with to wait for completion
+            with self.backend.exchange_async(
+                cla=CLA,
+                ins=InsType.CONFIGURE_BAKER,
+                p1=0x01,
+                p2=P2.P2_NONE,
+                data=transaction,
+            ):
+                pass
+
+            # Final exchange with response yielded to caller
+            with self.backend.exchange_async(
+                cla=CLA,
+                ins=InsType.CONFIGURE_BAKER,
+                p1=0x02,
+                p2=P2.P2_NONE,
+                data=aggregation_key,
+            ) as response:
+                yield response
+        else:
+            # If no aggregation key, yield response from second exchange
+            with self.backend.exchange_async(
+                cla=CLA,
+                ins=InsType.CONFIGURE_BAKER,
+                p1=0x01,
+                p2=P2.P2_NONE,
+                data=transaction,
+            ) as response:
+                yield response
+
+    @contextmanager
+    def sign_configure_baker_url(
+        self, url: bytes, bitmap: bytes, is_called_first: bool = True
+    ) -> Generator[None, None, None]:
+        def encode_word16(value: int) -> bytes:
+            # Ensure the value fits in 16 bits
+            if not 0 <= value <= 0xFFFF:
+                raise ValueError("Value must be between 0 and 65535 (inclusive)")
+
+            # Convert the integer to a 2-byte big-endian representation
+            return value.to_bytes(2, byteorder="big")
+
+        if is_called_first:
+            self._configure_baker_part_0(bitmap)
+
+        # Send the URL length first
+        url_length = encode_word16(len(url))
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.CONFIGURE_BAKER,
+            p1=0x03,
+            p2=P2.P2_NONE,
+            data=url_length,
+        ):
+            pass
+
+        # Batch the URL into at most 255 byte chunks
+        chunked_url = split_message(url, 255)
+        for serialized_url_chunk in chunked_url:
+            # Send each chunk and yield the last response
+            with self.backend.exchange_async(
+                cla=CLA,
+                ins=InsType.CONFIGURE_BAKER,
+                p1=0x04,
+                p2=P2.P2_NONE,
+                data=serialized_url_chunk,
+            ) as response:
+                if serialized_url_chunk == chunked_url[-1]:  # If this is the last chunk
+                    yield response
+                else:
+                    pass
+
+    @contextmanager
+    def sign_configure_baker_commission_rate(
+        self,
+        bitmap: bytes,
+        transaction_fee: bool = False,
+        baking_reward: bool = False,
+        finalization_reward: bool = False,
+        is_called_first: bool = True,
+    ) -> Generator[None, None, None]:
+        serialized_commission_rates = b""
+
+        if is_called_first:
+            self._configure_baker_part_0(bitmap)
+
+        if transaction_fee:
+            serialized_commission_rates += bytes.fromhex("0000B0C1")
+
+        if baking_reward:
+            baking_reward_commission = bytes.fromhex("0000C001")
+            serialized_commission_rates += baking_reward_commission
+
+        if finalization_reward:
+            finalization_reward_commission = bytes.fromhex("00000B11")
+            serialized_commission_rates += finalization_reward_commission
+
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.CONFIGURE_BAKER,
+            p1=0x05,  # Special P1 value for commission rates
+            p2=P2.P2_NONE,
+            data=serialized_commission_rates,
+        ) as response:
+            yield response
+
+    @contextmanager
+    def _configure_baker_part_0(
+        self,
+        bitmap: bytes,
+    ) -> Generator[None, None, None]:
+
+        data_p1 = bytes.fromhex(self.CONFIGURE_BAKER_HEADER)
+        data_p1 += bitmap
+
+        # First exchange - using with to wait for completion
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.CONFIGURE_BAKER,
+            p1=P1.P1_NONE,
+            p2=P2.P2_NONE,
+            data=data_p1,
+        ):
+            pass
+
     @contextmanager
     def export_private_key(
         self,
@@ -409,6 +572,169 @@ class BoilerplateCommandSender:
             p2=P2.P2_EXPORT_BLS_KEY,
             data=data,
         ) as response:
+            yield response
+
+    def credential_deployment_part_1(
+        self,
+        path: str,
+        number_of_keys: int,
+    ) -> bool:
+        # send derivation path (no display)
+        data = pack_derivation_path(path)
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_INITIAL_PACKET,
+            p2=P2.P2_NONE,
+            data=data,
+        )
+        print("km--------sent derivation path", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # handle credential deployment keys
+        ## send number of keys
+        data = number_of_keys.to_bytes(1, byteorder="big")
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_VERIFICATION_KEY_LENGTH,
+            p2=P2.P2_NONE,
+            data=data,
+        )
+        print("km--------sent number of keys", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        return True
+
+    @contextmanager
+    def credential_deployment_part_2(self, key_index: int, key: bytes):
+        key_index = key_index + 1
+        data = key_index.to_bytes(1, byteorder="big") + key
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_VERIFICATION_KEY,
+            p2=P2.P2_NONE,
+            data=data,
+        ) as response:
+            yield response
+
+    @contextmanager
+    def credential_deployment_part_3(
+        self,
+        last_key: bytes,
+        signature_threshold: bytes,
+        ar_identity: bytes,
+        credential_dates: bytes,
+        attribute_tag: bytes,
+        attribute_value: bytes,
+        proofs: bytes,
+        transaction: bytes,
+    ) -> Generator[None, None, None]:
+        ## send last key (display ?)
+
+        data = (0).to_bytes(1, byteorder="big") + last_key
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_VERIFICATION_KEY,
+            p2=P2.P2_NONE,
+            data=data,
+        )
+        print("km--------sent last key", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+
+        # send signature threshold
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_SIGNATURE_THRESHOLD,
+            p2=P2.P2_NONE,
+            data=signature_threshold,
+        )
+        print("km--------sent signature threshold", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send ar_identity
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_AR_IDENTITY,
+            p2=P2.P2_NONE,
+            data=ar_identity,
+        )
+        print("km--------sent ar_identity", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send credential dates
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_CREDENTIAL_DATES,
+            p2=P2.P2_NONE,
+            data=credential_dates,
+        )
+        print("km--------sent credential dates", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send attribute tag
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_ATTRIBUTE_TAG,
+            p2=P2.P2_NONE,
+            data=attribute_tag,
+        )
+        print("km--------sent attribute tag", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send attribute value
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_ATTRIBUTE_VALUE,
+            p2=P2.P2_NONE,
+            data=attribute_value,
+        )
+        print("km--------sent attribute value", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send length of proofs
+        data = len(proofs).to_bytes(4, byteorder="big")
+        temp_response = self.backend.exchange(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_LENGTH_OF_PROOFS,
+            p2=P2.P2_NONE,
+            data=data,
+        )
+        print("km--------sent length of proofs", temp_response)
+        if temp_response.status != 0x9000:
+            raise ExceptionRAPDU(temp_response.status)
+        # send proofs in chunks
+        proof_chunks = split_message(proofs, MAX_APDU_LEN)
+        for i, chunk in enumerate(proof_chunks):
+            temp_response = self.backend.exchange(
+                cla=CLA,
+                ins=InsType.CREDENTIAL_DEPLOYMENT,
+                p1=P1.P1_PROOFS,
+                p2=P2.P2_NONE,
+                data=chunk,
+            )
+            print(f"km--------sent proof chunk {i+1}", temp_response)
+            if temp_response.status != 0x9000:
+                raise ExceptionRAPDU(temp_response.status)
+        # send new or existing
+
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.CREDENTIAL_DEPLOYMENT,
+            p1=P1.P1_NEW_OR_EXISTING,
+            p2=P2.P2_NONE,
+            data=transaction,
+        ) as response:
+            print("km--------sent new or existing", response)
             yield response
 
     def get_async_response(self) -> Optional[RAPDU]:
