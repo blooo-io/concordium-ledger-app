@@ -1,5 +1,3 @@
-#include "os.h"
-
 #include "common/ui/display.h"
 #include "common/responseCodes.h"
 #include "common/sign.h"
