@@ -3,7 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "buffer.h"
-#include "../src/signTransfer.h"
+#include "signTransfer.h"
 
 #define ADDRESS_LEN 20
 void format_hex(const uint8_t* data, size_t dataLen, char* dst, size_t dstLen);
