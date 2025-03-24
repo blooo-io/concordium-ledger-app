@@ -59,6 +59,8 @@
 #define ACCOUNT_TRANSACTION_HEADER_LENGTH 60
 #define UPDATE_HEADER_LENGTH              28
 
+
+#define TESTING 0x00
 /**
  * Instruction class of the Concordium application.
  */
