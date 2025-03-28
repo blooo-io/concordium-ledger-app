@@ -76,12 +76,7 @@ VARIANT_PARAM = COIN
 VARIANT_VALUES = CCD
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
-DEBUG = 1
-
-ifeq ($(DEBUG),1)
-    # debugging helper functions and macros
-    CFLAGS    +=  -g
-endif
+#DEBUG = 1
 
 ########################################
 #     Application custom permissions   #
