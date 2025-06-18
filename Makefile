@@ -29,8 +29,8 @@ APPNAME = "Concordium"
 
 # Application version
 APPVERSION_M = 5
-APPVERSION_N = 1
-APPVERSION_P = 3
+APPVERSION_N = 3
+APPVERSION_P = 1
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
 DEFINES += APPVERSION=\"$(APPVERSION)\"
@@ -44,6 +44,7 @@ APP_SOURCE_PATH += src
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
+ICON_NANOS = icons/app_concordium_16px.gif
 ICON_NANOX = icons/app_concordium_14px.gif
 ICON_NANOSP = icons/app_concordium_14px.gif
 ICON_STAX = icons/app_concordium_32px.gif
@@ -75,12 +76,7 @@ VARIANT_PARAM = COIN
 VARIANT_VALUES = CCD
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
-DEBUG = 1
-
-ifeq ($(DEBUG),1)
-    # debugging helper functions and macros
-    CFLAGS    +=  -g
-endif
+#DEBUG = 1
 
 ########################################
 #     Application custom permissions   #
@@ -109,7 +105,7 @@ ENABLE_NBGL_QRCODE = 1
 ########################################
 # These advanced settings allow to disable some feature that are by
 # default enabled in the SDK `Makefile.standard_app`.
-#DISABLE_STANDARD_APP_FILES = 1 
+#DISABLE_STANDARD_APP_FILES = 1
 #DISABLE_DEFAULT_IO_SEPROXY_BUFFER_SIZE = 1 # To allow custom size declaration
 #DISABLE_STANDARD_APP_DEFINES = 1 # Will set all the following disablers
 #DISABLE_STANDARD_SNPRINTF = 1
