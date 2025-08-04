@@ -88,12 +88,10 @@ class P2(IntEnum):
 class InsType(IntEnum):
     VERIFY_ADDRESS = 0x00
     GET_PUBLIC_KEY = 0x01
-    GET_APP_NAME = 0x21
     SIGN_TRANSFER = 0x02
     SIGN_TRANSFER_WITH_SCHEDULE = 0x03
     CREDENTIAL_DEPLOYMENT = 0x04
     EXPORT_PRIVATE_KEY_LEGACY = 0x05
-    EXPORT_PRIVATE_KEY_NEW = 0x37
     DEPLOY_MODULE = 0x06
     INIT_CONTRACT = 0x07
     UPDATE_CONTRACT = 0x08
@@ -101,10 +99,13 @@ class InsType(IntEnum):
     CONFIGURE_DELEGATION = 0x17
     CONFIGURE_BAKER = 0x18
     PUBLIC_INFO_FOR_IP = 0x20
+    GET_APP_NAME = 0x21
     SIGN_UPDATE_CREDENTIAL = 0x31
     SIGN_TRANSFER_WITH_MEMO = 0x32
     SIGN_TRANSFER_WITH_SCHEDULE_AND_MEMO = 0x34
     REGISTER_DATA = 0x35
+    EXPORT_PRIVATE_KEY_NEW = 0x37
+    SIGN_PLT_TRANSACTION = 0x38
 
 
 class Errors(IntEnum):
@@ -1202,3 +1203,37 @@ class BoilerplateCommandSender:
 
     def get_async_response(self) -> Optional[RAPDU]:
         return self.backend.last_async_response
+
+    @contextmanager
+    def sign_plt_transaction(
+        self, path: str, transaction: bytes
+    ) -> Generator[None, None, None]:
+        data = pack_derivation_path(path)
+        index = P1.P1_NONE + 1
+
+        self.backend.exchange(
+            cla=CLA,
+            ins=InsType.SIGN_PLT_TRANSACTION,
+            p1=index,
+            p2=P2.P2_NONE,
+            data=data,
+        )
+        index += 1
+        transaction_chunks = split_message(transaction, MAX_APDU_LEN)
+        for chunk in transaction_chunks[:-1]:
+            self.backend.exchange(
+                cla=CLA,
+                ins=InsType.SIGN_PLT_TRANSACTION,
+                p1=index,
+                p2=P2.P2_NONE,
+                data=chunk,
+            )
+            index += 1
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_PLT_TRANSACTION,
+            p1=index,
+            p2=P2.P2_NONE,
+            data=transaction_chunks[-1],
+        ) as response:
+            yield response

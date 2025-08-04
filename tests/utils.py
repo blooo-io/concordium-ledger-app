@@ -10,6 +10,20 @@ from ragger.navigator import NavInsID
 
 
 def split_message(message: bytes, max_size: int) -> List[bytes]:
+    """
+    Splits a bytes message into a list of chunks, each with a maximum size of `max_size`.
+
+    Args:
+        message (bytes): The message to be split.
+        max_size (int): The maximum size of each chunk.
+
+    Returns:
+        List[bytes]: A list of byte chunks, each of length at most `max_size`.
+
+    Example:
+        >>> split_message(b'abcdefgh', 3)
+        [b'abc', b'def', b'gh']
+    """
     return [message[x : x + max_size] for x in range(0, len(message), max_size)]
 
 
