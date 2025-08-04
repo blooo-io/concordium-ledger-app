@@ -1,5 +1,6 @@
 from hashlib import sha256
-from sha3 import keccak_256  # type: ignore
+
+# from sha3 import keccak_256  # type: ignore
 from typing import List
 
 from ecdsa.curves import SECP256k1  # type: ignore
@@ -28,15 +29,15 @@ def split_message(message: bytes, max_size: int) -> List[bytes]:
 
 
 # Check if a signature of a given message is valid
-def check_signature_validity(
-    public_key: bytes, signature: bytes, message: bytes
-) -> bool:
-    pk: VerifyingKey = VerifyingKey.from_string(
-        public_key, curve=SECP256k1, hashfunc=sha256
-    )
-    return pk.verify(
-        signature=signature, data=message, hashfunc=keccak_256, sigdecode=sigdecode_der
-    )
+# def check_signature_validity(
+#     public_key: bytes, signature: bytes, message: bytes
+# ) -> bool:
+#     pk: VerifyingKey = VerifyingKey.from_string(
+#         public_key, curve=SECP256k1, hashfunc=sha256
+#     )
+#     return pk.verify(
+#         signature=signature, data=message, hashfunc=keccak_256, sigdecode=sigdecode_der
+#     )
 
 
 def instructions_builder(
