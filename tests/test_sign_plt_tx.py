@@ -47,7 +47,7 @@ def test_sign_plt_single_transfer(
     # Send the sign device instruction.
     # As it requires on-screen validation, the function is asynchronous.
     # It will yield the result when the navigation is done
-    with client.sign_simple_transfer(path=path, transaction=transaction):
+    with client.sign_plt_transaction(path=path, transaction=transaction):
         # Validate the on-screen request by performing the navigation appropriate for this device
         navigate_until_text_and_compare(
             firmware, navigator, "Sign", default_screenshot_path, test_name
@@ -57,6 +57,7 @@ def test_sign_plt_single_transfer(
     response = client.get_async_response().data
     response_hex = response.hex()
     print("response", response_hex)
+    # KM_TODO: add the correct signature
     assert (
         response_hex
         == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
