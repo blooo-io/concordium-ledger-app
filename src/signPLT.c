@@ -1,5 +1,5 @@
 #include "globals.h"
-#include "io.h"
+#include "read.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
 static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
@@ -29,19 +29,34 @@ void handleSignPltTransaction(uint8_t *cdata,
         cdata += offset;
         remainingDataLength -= offset;
 
+        // Hash the resh of the transaction ()
+        updateHash((cx_hash_t *)&tx_state->hash, cdata, remainingDataLength);
+
         // Parse token Id info
         ctx->tokenIdLength = cdata[0];
         cdata++;
         remainingDataLength--;
 
+        if (remainingDataLength < ctx->tokenIdLength) {
+            PRINTF("Not enough data left");
+            THROW(ERROR_INVALID_PARAM);
+        }
         memcpy(ctx->tokenId, cdata, ctx->tokenIdLength);
+        cdata += ctx->tokenIdLength;
+        remainingDataLength -= ctx->tokenIdLength;
 
         PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - TokenID %.*H\n",
                ctx->tokenIdLength,
                ctx->tokenId);
 
+        PRINTF("km-logs - here 1 \n");
         // Parse OperationLength
-
+        cbor_context->cborLength = U4BE(cdata, 0);
+        PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - cborLength %d\n",
+               cbor_context->cborLength);
+        cdata += 4;
+        remainingDataLength -= 4;
+        PRINTF("km-logs - here 2\n");
         // Parse Operations
         // Hash it all
 
@@ -54,10 +69,9 @@ void handleSignPltTransaction(uint8_t *cdata,
         //     THROW(ERROR_INVALID_PARAM);
         // }
 
-        updateHash((cx_hash_t *)&tx_state->hash, cdata, 2);
-
-        ctx->state = TX_TRANSFER_MEMO_INITIAL;
-        sendSuccessNoIdle();
+        // ctx->state = TX_TRANSFER_MEMO_INITIAL;
+        PRINTF("km-logs - about to be cool\n");
+        PRINTF("km-logs - cool\n");
     }
     // else if (p1 == P1_MEMO && ctx->state == TX_TRANSFER_MEMO_INITIAL) {
     //     updateHash((cx_hash_t *)&tx_state->hash, cdata, dataLength);
