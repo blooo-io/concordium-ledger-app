@@ -1210,16 +1210,12 @@ class BoilerplateCommandSender:
     ) -> Generator[None, None, None]:
         data = pack_derivation_path(path)
         index = P1.P1_NONE + 1
-
-        self.backend.exchange(
-            cla=CLA,
-            ins=InsType.SIGN_PLT_TRANSACTION,
-            p1=index,
-            p2=P2.P2_NONE,
-            data=data,
-        )
-        index += 1
+        transaction = data + transaction
         transaction_chunks = split_message(transaction, MAX_APDU_LEN)
+        print(
+            "km-logs [test] (sign_plt_transaction) - numOfChunks:",
+            len(transaction_chunks),
+        )
         for chunk in transaction_chunks[:-1]:
             self.backend.exchange(
                 cla=CLA,
