@@ -48,6 +48,7 @@
 #include "deployModule.h"
 #include "initContract.h"
 #include "updateContract.h"
+#include "signPLT.h"
 
 #define LEGACY_PURPOSE   1105
 #define LEGACY_COIN_TYPE 0
@@ -105,7 +106,8 @@ typedef enum {
     TRANSFER_WITH_MEMO = 22,
     TRANSFER_WITH_SCHEDULE_WITH_MEMO = 24,
     CONFIGURE_BAKER = 25,
-    CONFIGURE_DELEGATION = 26
+    CONFIGURE_DELEGATION = 26,
+    PLT_TRANSACTION = 27,
 } transactionKind_e;
 
 typedef struct {
@@ -149,6 +151,7 @@ typedef struct {
         signTransferContext_t signTransferContext;
         signTransferWithScheduleContext_t signTransferWithScheduleContext;
         signRegisterData_t signRegisterData;
+        signPLTContext_t signPLTContext;
     };
     cborContext_t cborContext;
 

@@ -171,6 +171,28 @@ int hashAccountTransactionHeaderAndKind(uint8_t *cdata,
 int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpdateType);
 
 /**
+ * Parses the key derivation path and initializes the transaction hash, then processes the account
+ * transaction header and kind.
+ *
+ * This function is typically used at the start of handling a transaction command. It performs the
+ * following steps:
+ * 1. Parses the key derivation path from the beginning of the input buffer.
+ * 2. Initializes the SHA-256 hash context for the transaction.
+ * 3. Processes and hashes the account transaction header and verifies the transaction kind.
+ *
+ * @param cdata         Pointer to the input buffer containing the key derivation path followed by
+ * the transaction header.
+ * @param dataLength    Length of the input buffer.
+ * @param kind          The expected transaction kind to validate against.
+ * @return              The total number of bytes consumed from the input buffer (key path +
+ * header).
+ *
+ * Throws ERROR_FAILED_CX_OPERATION if hash initialization fails.
+ * Throws ERROR_INVALID_TRANSACTION if the transaction header or kind is invalid.
+ */
+int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind);
+
+/**
  * Adds the account transaction header and the recipient address to the transaction hash, and
  * writes the base58 encoded recipient address for later display.
  * @param cdata the incoming command data pointing to the start of the input, i.e. with the key path
