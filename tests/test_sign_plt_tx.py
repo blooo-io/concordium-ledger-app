@@ -12,7 +12,12 @@ from application_client.boilerplate_response_unpacker import (
 )
 from ragger.error import ExceptionRAPDU
 from ragger.navigator import NavInsID
-from utils import navigate_until_text_and_compare, instructions_builder, split_message
+from utils import (
+    navigate_until_text_and_compare,
+    instructions_builder,
+    split_message,
+    build_tx_with_payload,
+)
 
 MAX_SCHEDULE_PAIRS_IN_ONE_APDU: int = (250 // 16) * 16
 MAX_APDU_LEN: int = 255
@@ -30,19 +35,9 @@ def test_sign_plt_single_transfer(
     # The path used for this entire test
     path: str = "m/1105/0/0/0/0/2/0/0"
 
-    # Create the transaction that will be sent to the device for signing
-
-    HEADER = (
-        "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7"  # Sender
+    transaction = build_tx_with_payload(
+        "1b0754657374504c540000005381a1687472616e73666572a266616d6f756e74c482211904c769726563697069656e74d99d73a201d99d71a101190397035820c8d4bb7106a96bfa6f069438270bf9748049c24798b13b08f88fc2f46afb435f"
     )
-    HEADER += "000000000000000a"  # SequenceNumber
-    HEADER += "0000000000000064"  # EnergyAmount
-    HEADER += "00000060"  # PayloadSize
-    HEADER += "0000000063de5da7"  # Expiry
-
-    payload = "1b0754657374504c540000005381a1687472616e73666572a266616d6f756e74c482211904c769726563697069656e74d99d73a201d99d71a101190397035820c8d4bb7106a96bfa6f069438270bf9748049c24798b13b08f88fc2f46afb435f"
-    transaction = HEADER + payload
-    transaction = bytes.fromhex(transaction)
 
     # Send the sign device instruction.
     # As it requires on-screen validation, the function is asynchronous.

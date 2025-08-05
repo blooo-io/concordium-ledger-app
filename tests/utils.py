@@ -40,6 +40,25 @@ def split_message(message: bytes, max_size: int) -> List[bytes]:
 #     )
 
 
+def build_tx_with_payload(
+    payload: str,
+    sender: str = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7",
+):
+    # Create the transaction that will be sent to the device for signing
+    _payload = bytes.fromhex(payload)
+    if len(sender) != 64:
+        raise Exception("The sender address should be 64characters")
+
+    HEADER = sender
+    HEADER += "000000000000000a"  # SequenceNumber
+    HEADER += "0000000000000064"  # EnergyAmount
+    HEADER += len(_payload).to_bytes(4).hex()  # PayloadSize
+    HEADER += "0000000063de5da7"  # Expiry
+
+    transaction = bytes.fromhex(HEADER) + _payload
+    return transaction
+
+
 def instructions_builder(
     number_of_screens_until_confirm: int,
     backend,
