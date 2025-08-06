@@ -39,8 +39,18 @@ DEFINES += APPVERSION_M=$(APPVERSION_M)
 DEFINES += APPVERSION_N=$(APPVERSION_N)
 DEFINES += APPVERSION_P=$(APPVERSION_P)
 
+
+# Use the Ledger-specific CBOR files
+CBOR_LEDGER_DIR = ./lib/tinycbor-ledger
+CBOR_MAIN_DIR = ./lib/tinycbor/src
+
+
 # Application source files
-APP_SOURCE_PATH += src
+APP_SOURCE_PATH += src $(CBOR_LEDGER_DIR)
+
+# Include directories (headers are in main tinycbor)
+CFLAGS += -I$(CBOR_MAIN_DIR)
+
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
