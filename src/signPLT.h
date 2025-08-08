@@ -14,6 +14,8 @@ void handleSignPltTransaction(uint8_t *cdata,
 
 typedef enum {
     TX_PLT_INITIAL = 49,
+    TX_PLT_CBOR_INITIAL,
+    TX_PLT_CBOR,
 } signPLTState_t;
 
 typedef struct {
