@@ -60,6 +60,79 @@ def test_sign_plt_single_transfer(
     # assert check_signature_validity(public_key, der_sig, transaction)
 
 
+# In this test we send to the device a transaction to sign and validate it on screen
+# The transaction is short and will be sent in one chunk
+# We will ensure that the displayed information is correct by using screenshots comparison
+@pytest.mark.active_test_scope
+def test_sign_plt_single_mint(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    # Use the app interface instead of raw interface
+    client = BoilerplateCommandSender(backend)
+    # The path used for this entire test
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0754657374504c540000001581a1646d696e74a166616d6f756e74c482211904c7"
+    )
+
+    # Send the sign device instruction.
+    # As it requires on-screen validation, the function is asynchronous.
+    # It will yield the result when the navigation is done
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        # Validate the on-screen request by performing the navigation appropriate for this device
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    # The device as yielded the result, parse it and ensure that the signature is correct
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    # KM_TODO: add the correct signature
+    assert (
+        response_hex
+        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
+    )
+    # assert check_signature_validity(public_key, der_sig, transaction)
+
+
+# In this test we send to the device a transaction to sign and validate it on screen
+# The transaction is short and will be sent in one chunk
+# We will ensure that the displayed information is correct by using screenshots comparison
+@pytest.mark.active_test_scope
+def test_sign_plt_single_deny(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    # Use the app interface instead of raw interface
+    client = BoilerplateCommandSender(backend)
+    # The path used for this entire test
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0754657374504c540000004881a16d6164642d64656e792d6c697374a166746172676574d99d73a201d99d71a101190397035820c8d4bb7106a96bfa6f069438270bf9748049c24798b13b08f88fc2f46afb435f"
+    )
+
+    # Send the sign device instruction.
+    # As it requires on-screen validation, the function is asynchronous.
+    # It will yield the result when the navigation is done
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        # Validate the on-screen request by performing the navigation appropriate for this device
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    # The device as yielded the result, parse it and ensure that the signature is correct
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    # KM_TODO: add the correct signature
+    assert (
+        response_hex
+        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
+    )
+
+
 # # In this test we send to the device a transaction to sign and validate it on screen
 # # The transaction is short and will be sent in one chunk
 # # We will ensure that the displayed information is correct by using screenshots comparison
