@@ -7,36 +7,10 @@
 #include "cborStrParsing.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
-static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
+// static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
 static tx_state_t *tx_state = &global_tx_state;
 
 #define P1_INITIAL 0x01
-
-// CborError _cbor_value_dup_string_ledger(const CborValue *value,
-//                                         void **buffer,
-//                                         size_t *buflen,
-//                                         CborValue *next) {
-//     CborError err;
-//     LEDGER_ASSERT(buffer, "Missing buffer");
-//     LEDGER_ASSERT(buflen, "Missing buflen");
-//     PRINTF("km-logs: [ cborparser_dup_string] (_cbor_value_dup_string) - buflen b4: %d\n",
-//            (uint32_t)*buflen);  // Dereference buflen
-//     size_t temp_buflen = 100;
-//     err = _cbor_value_copy_string(value, NULL, &temp_buflen, NULL);  // Pass address
-//     if (err) return err;
-//     PRINTF("km-logs: [ cborparser_dup_string] (_cbor_value_dup_string) - buflen after: %d\n",
-//            (uint32_t)temp_buflen);
-//     if (temp_buflen > *buflen) {  // Dereference buflen
-//         PRINTF("buflen is smaller than needed size\n");
-//         return CborErrorOutOfMemory;
-//     }
-//     err = _cbor_value_copy_string(value, *buffer, buflen, next);  // buflen is already a pointer
-//     if (err) {
-//         free(*buffer);
-//         return err;
-//     }
-//     return CborNoError;
-// }
 
 static void indent(int nestingLevel) {
     while (nestingLevel--) PRINTF("  ");
@@ -301,44 +275,39 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         PRINTF("Error while parsing cbor tags\n");
         THROW(ERROR_INVALID_PARAM);
     }
-    if (sizeof(global.pltOperationDisplay) < out_buf.size) {
+    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
         PRINTF("display str is too small for value %d < %d\n",
-               sizeof(global.pltOperationDisplay),
+               sizeof(ctx->pltOperationDisplay),
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
-    memcpy(global.pltOperationDisplay, out_buf.ptr, out_buf.size);
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - global.pltOperationDisplay: %s\n",
-           global.pltOperationDisplay);
+    memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
+    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
+           ctx->pltOperationDisplay);
 
     return true;
 }
 
-void handleSignPltTransaction(uint8_t *cdata,
-                              uint8_t p1,
-                              uint8_t p2,
-                              uint8_t lc,
-                              volatile unsigned int *flags,
-                              bool isInitialCall) {
+void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more
+                              //   bool isInitialCall
+) {
     uint8_t remainingDataLength = lc;
 
     PRINTF(
         "km-logs [signPLT.c] (handleSignPltTransaction) - Starting handling of plt transaction\n");
-    PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - isInitialCall:  %s\n",
-           isInitialCall ? "true" : "false");
 
-    if (isInitialCall) {
-        ctx->state = TX_PLT_INITIAL;
-    }
-
-    if (p1 == P1_INITIAL && ctx->state == TX_PLT_INITIAL) {
+    if (chunk == 0) {
+        explicit_bzero(ctx, sizeof(signPLTContext_t));
+        ctx->currentCborLength = 0;
+        ctx->totalCborLength = 0;
         PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) Initial chunk about to process\n");
+        // Parse and hash the header and kind
         uint8_t offset = handleHeaderAndKind(cdata, remainingDataLength, PLT_TRANSACTION);
         cdata += offset;
         remainingDataLength -= offset;
 
-        // Hash the resh of the transaction ()
+        // Hash the rest of the chunk
         updateHash((cx_hash_t *)&tx_state->hash, cdata, remainingDataLength);
 
         // Parse token Id info
@@ -359,61 +328,47 @@ void handleSignPltTransaction(uint8_t *cdata,
                ctx->tokenId);
 
         // Parse OperationLength
-        cbor_context->cborLength = U4BE(cdata, 0);
+        ctx->totalCborLength = U4BE(cdata, 0);
         PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - cborLength %d\n",
-               cbor_context->cborLength);
+               ctx->totalCborLength);
         cdata += 4;
         remainingDataLength -= 4;
-        // Parse Operations
-        if (!parsePltCbor(cdata, remainingDataLength)) {
-            PRINTF("Cbor parsing failed\n");
-            THROW(ERROR_INVALID_PARAM);
+
+        // Check if the OperationLength is larger than the buffer
+        if (ctx->totalCborLength > sizeof(ctx->cbor)) {
+            PRINTF("Cbor buffer is too small to contain the complete cbor, %d > %d\n",
+                   ctx->totalCborLength,
+                   sizeof(ctx->cbor));
+            THROW(ERROR_BUFFER_OVERFLOW);
         }
-
-        // hash the remaining data
-        // if (remainingDataLength < 2) {
-        //     THROW(ERROR_BUFFER_OVERFLOW);
-        // }
-        // memo_ctx->cborLength = U2BE(cdata, 0);
-        // if (memo_ctx->cborLength > MAX_MEMO_SIZE) {
-        //     THROW(ERROR_INVALID_PARAM);
-        // }
-
-        // ctx->state = TX_TRANSFER_MEMO_INITIAL;
-
-        // io_send_sw(SUCCESS);
-        uiPltOperationDisplay();
     }
-    // else if (p1 == P1_MEMO && ctx->state == TX_TRANSFER_MEMO_INITIAL) {
-    //     updateHash((cx_hash_t *)&tx_state->hash, cdata, dataLength);
-    //     readCborInitial(cdata, dataLength);
-    //     if (memo_ctx->cborLength == 0) {
-    //         finishMemo();
-    //     } else {
-    //         ctx->state = TX_TRANSFER_MEMO;
-    //         sendSuccessNoIdle();
-    //     }
-    // } else if (p1 == P1_MEMO && ctx->state == TX_TRANSFER_MEMO) {
-    //     updateHash((cx_hash_t *)&tx_state->hash, cdata, dataLength);
-    //     readCborContent(cdata, dataLength);
-    //     if (memo_ctx->cborLength != 0) {
-    //         // The memo size is <=256 bytes, so we should always have received the complete memo
-    //         by
-    //             // this point
-    //             THROW(ERROR_INVALID_STATE);
-    //     }
-    //     finishMemo();
-    // } else if (p1 == P1_AMOUNT && ctx->state == TX_TRANSFER_AMOUNT) {
-    //     // Build display value of the amount to transfer, and also add the bytes to the hash.
-    //     if (remainingDataLength < 8) {
-    //         THROW(ERROR_BUFFER_OVERFLOW);
-    //     }
-    //     uint64_t amount = U8BE(cdata, 0);
-    //     amountToGtuDisplay(ctx->displayAmount, sizeof(ctx->displayAmount), amount);
-    //     updateHash((cx_hash_t *)&tx_state->hash, cdata, 8);
-    //     startTransferDisplay(true, flags);
-    // }
-    else {
-        THROW(ERROR_INVALID_STATE);
+
+    // Add the cbor to the context
+    if (remainingDataLength > sizeof(ctx->cbor) - ctx->currentCborLength) {
+        PRINTF("Cbor received is larger than the buffer, %d > %d\n",
+               remainingDataLength,
+               sizeof(ctx->cbor) - ctx->currentCborLength);
+        THROW(ERROR_BUFFER_OVERFLOW);
+    }
+    memcpy(ctx->cbor + ctx->currentCborLength, cdata, remainingDataLength);
+    ctx->currentCborLength += remainingDataLength;
+
+    if (more) {
+        io_send_sw(SUCCESS);
+        return;
+    } else {
+        if (ctx->currentCborLength == ctx->totalCborLength) {
+            // Parse the cbor
+            if (!parsePltCbor(ctx->cbor, ctx->totalCborLength)) {
+                PRINTF("Cbor parsing failed\n");
+                THROW(ERROR_INVALID_PARAM);
+            }
+            uiPltOperationDisplay();
+        } else {
+            PRINTF("Cbor received is not complete, %d < %d\n",
+                   ctx->currentCborLength,
+                   ctx->totalCborLength);
+            THROW(ERROR_INVALID_STATE);
+        }
     }
 }

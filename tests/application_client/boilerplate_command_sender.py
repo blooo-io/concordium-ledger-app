@@ -73,9 +73,9 @@ class P2(IntEnum):
     # Basic P2 for all instructions
     P2_NONE = 0x00
     # # Parameter 2 for last APDU to receive.
-    # P2_LAST = 0x00
+    P2_LAST = 0x00
     # # Parameter 2 for more APDU to receive.
-    # P2_MORE = 0x80
+    P2_MORE = 0x80
     # Parameter 2 for credential deployment
     P2_CREDENTIAL_INITIAL = 0x00  # Initial credential data
     P2_CREDENTIAL_CREDENTIAL_INDEX = 0x01  # Credential index
@@ -1209,7 +1209,7 @@ class BoilerplateCommandSender:
         self, path: str, transaction: bytes
     ) -> Generator[None, None, None]:
         data = pack_derivation_path(path)
-        index = P1.P1_NONE + 1
+        index = 0
         transaction = data + transaction
         transaction_chunks = split_message(transaction, MAX_APDU_LEN)
         print(
@@ -1221,7 +1221,7 @@ class BoilerplateCommandSender:
                 cla=CLA,
                 ins=InsType.SIGN_PLT_TRANSACTION,
                 p1=index,
-                p2=P2.P2_NONE,
+                p2=P2.P2_MORE,
                 data=chunk,
             )
             index += 1

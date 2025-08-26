@@ -60,8 +60,6 @@
 #define ACCOUNT_TRANSACTION_HEADER_LENGTH 60
 #define UPDATE_HEADER_LENGTH              28
 
-#define MAX_PLT_DIPLAY_STR 220
-
 /**
  * Instruction class of the Concordium application.
  */
@@ -86,6 +84,11 @@
  * Key length of (Public Key || Verification Key || Account Key)
  */
 #define KEY_LENGTH 32
+
+/**
+ * P2 value for more data
+ */
+#define P2_MORE 0x80
 
 typedef enum {
     LEGACY_ID_CRED_SEC = 0,
@@ -179,7 +182,6 @@ typedef union {
     initContract_t initContract;
     updateContract_t updateContract;
     transactionWithDataBlob_t withDataBlob;
-    char pltOperationDisplay[MAX_PLT_DIPLAY_STR];
 } instructionContext;
 extern instructionContext global;
 
