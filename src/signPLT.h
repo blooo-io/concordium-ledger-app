@@ -6,7 +6,7 @@
 #define MAX_TAG_CONTENT_SIZE 256
 #define MAX_TAGS             24
 
-#define MAX_TAG_PARSED_CONTENT_SIZE 100
+#define MAX_TAG_PARSED_CONTENT_SIZE 300
 #define MAX_TOKEN_ID_LENGTH         255
 #define MAX_CBOR_LENGTH             900
 #define MAX_PLT_DIPLAY_STR          2000

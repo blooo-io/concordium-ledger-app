@@ -69,11 +69,20 @@ static const char* find_char(const char* str, char c) {
     return NULL;
 }
 
-// Parse a number from string (replacement for strtoull, handles negative numbers)
-static int64_t parse_number(const char* str, const char* end) {
-    int64_t result = 0;
-    char formated_num[22];
-    char result_str[22];
+typedef struct {
+    union {
+        int64_t signed_val;
+        uint64_t unsigned_val;
+    } value;
+    bool is_signed;
+} parsed_number_t;
+
+// Parse a number from string that can handle full uint64_t range
+static parsed_number_t parse_number(const char* str, const char* end) {
+    parsed_number_t result = {0};
+    uint64_t magnitude = 0;
+    char formated_num[30];
+    char result_str[30];
     bool is_negative = false;
     const char* current = str;
 
@@ -91,20 +100,28 @@ static int64_t parse_number(const char* str, const char* end) {
     } else if (current < end && *current == '+') {
         current++;
     }
+
     // Parse digits
     while (current < end && *current >= '0' && *current <= '9') {
-        result = result * 10 + (*current - '0');
+        magnitude = magnitude * 10 + (*current - '0');
         current++;
     }
 
-    format_i64(formated_num, sizeof(formated_num), result);
+    // Store the result based on sign
     if (is_negative) {
-        snprintf(result_str, sizeof(result_str), "-%s", formated_num);
+        result.is_signed = true;
+        result.value.signed_val = -(int64_t)magnitude;
+        format_i64(formated_num, sizeof(formated_num), result.value.signed_val);
     } else {
-        snprintf(result_str, sizeof(result_str), "%s", formated_num);
+        result.is_signed = false;
+        result.value.unsigned_val = magnitude;
+        format_u64(formated_num, sizeof(formated_num), result.value.unsigned_val);
     }
+
+    snprintf(result_str, sizeof(result_str), "%s", formated_num);
     PRINTF("km-logs [cborStrParsing.c] (parse_number) - result - %s\n", result_str);
-    return is_negative ? -result : result;
+
+    return result;
 }
 
 // Function to extract tag information from the input string (Ledger-compatible)
@@ -139,13 +156,14 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
             continue;
         }
 
-        // Parse tag number (tags should always be positive, but using int64_t for consistency)
-        int64_t tag_number = parse_number(tag_start, tag_end);
-        if (tag_number < 0) {
-            PRINTF("Warning: negative tag number %lld found\n", tag_number);
+        parsed_number_t num = parse_number(tag_start, tag_end);
+        if (num.is_signed) {
+            PRINTF("Warning: negative tag number %lld found\n", num.value.signed_val);
             current++;
             continue;
         }
+        // Parse tag number, tag is always positive so we use the unsigned value
+        uint64_t tag_number = num.value.unsigned_val;
 
         // Find the colon after the tag
         const char* colon = find_char(tag_end, ':');
@@ -260,6 +278,7 @@ void print_tags_ledger(const tag_list_t* tag_list) {
         }
     }
 }
+
 bool parse_tag_40307(tag_info_t* tag) {
     PRINTF("about to parse tag 40307!\n");
 
@@ -407,8 +426,13 @@ bool parse_tag_4(tag_info_t* tag) {
         exponent_end++;
     }
 
-    // Parse the exponent
-    int64_t exponent = parse_number(exponent_start, exponent_end);
+    // Parse the exponent, it is supposed to be negative
+    parsed_number_t num = parse_number(exponent_start, exponent_end);
+    if (!num.is_signed && num.value.unsigned_val != 0) {
+        PRINTF("Warning: positive exponent %lld found\n", num.value.unsigned_val);
+        return false;
+    }
+    int64_t exponent = num.value.signed_val;
 
     // Find the second Int (mantissa)
     const char* second_int_pos = find_substring(exponent_end, "Int:");
@@ -426,64 +450,40 @@ bool parse_tag_4(tag_info_t* tag) {
         mantissa_end++;
     }
 
-    // Parse the mantissa
-    int64_t mantissa = parse_number(mantissa_start, mantissa_end);
+    // Parse the mantissa, it is supposed to be positive
+    num = parse_number(mantissa_start, mantissa_end);
+    if (num.is_signed) {
+        PRINTF("Warning: negative mantissa %lld found\n", num.value.signed_val);
+        return false;
+    }
+    uint64_t mantissa = num.value.unsigned_val;
 
     PRINTF("Parsed exponent: %lld, mantissa: %lld\n", exponent, mantissa);
 
-    // Calculate the decimal value: mantissa * 10^exponent
-    if (exponent >= 0) {
-        // Positive exponent - multiply by powers of 10
-        int64_t result = mantissa;
-        for (int64_t i = 0; i < exponent && i < 18; i++) {  // Limit to prevent overflow
-            result *= 10;
-        }
-        format_i64(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, result);
-    } else {
-        // Negative exponent - need to format with decimal places
-        int64_t abs_exponent = -exponent;
+    // Negative exponent - need to format with decimal places
+    int64_t abs_exponent = -exponent;
 
-        if (abs_exponent > 18) {  // Prevent too many decimal places
-            return false;
-        }
-
-        // Split mantissa into integer and fractional parts
-        int64_t divisor = 1;
-        for (int64_t i = 0; i < abs_exponent; i++) {
-            divisor *= 10;
-        }
-
-        int64_t integer_part = mantissa / divisor;
-        int64_t fractional_part = mantissa % divisor;
-
-        // Handle negative numbers correctly
-        bool is_negative = mantissa < 0;
-        if (is_negative) {
-            integer_part = -integer_part;
-            fractional_part = -fractional_part;
-        }
-
-        // Format the result and save to parsedContent
-        char integer_str[22];
-        char fractional_str[22];
-        format_i64(integer_str, sizeof(integer_str), integer_part);
-        format_i64(fractional_str, sizeof(fractional_str), fractional_part);
-
-        if (is_negative && integer_part == 0) {
-            // Special case: negative number with 0 integer part (e.g., -0.23)
-            snprintf(tag->parsedContent,
-                     MAX_TAG_PARSED_CONTENT_SIZE,
-                     "-%s.%s",
-                     integer_str,
-                     fractional_str);
-        } else {
-            snprintf(tag->parsedContent,
-                     MAX_TAG_PARSED_CONTENT_SIZE,
-                     "%s.%s",
-                     integer_str,
-                     fractional_str);
-        }
+    if (abs_exponent > 18) {  // Prevent too many decimal places
+        PRINTF("Warning: exponent %lld is too large\n", abs_exponent);
+        return false;
     }
+
+    // Split mantissa into integer and fractional parts
+    uint64_t divisor = 1;
+    for (uint64_t i = 0; i < abs_exponent; i++) {
+        divisor *= 10;
+    }
+
+    uint64_t integer_part = mantissa / divisor;
+    uint64_t fractional_part = mantissa % divisor;
+
+    // Format the result and save to parsedContent
+    char integer_str[257];
+    char fractional_str[257];
+    format_u64(integer_str, sizeof(integer_str), integer_part);
+    format_u64(fractional_str, sizeof(fractional_str), fractional_part);
+
+    snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "%s.%s", integer_str, fractional_str);
 
     PRINTF("Parsed decimal: %s\n", tag->parsedContent);
     return true;
