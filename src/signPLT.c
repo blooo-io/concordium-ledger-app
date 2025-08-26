@@ -4,6 +4,7 @@
 #include "cbor.h"
 #include "ledger_assert.h"
 #include "format.h"  // format_i64, format_hex
+#include "cborStrParsing.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
 static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
@@ -60,6 +61,9 @@ bool cbor_read_string_or_byte_string(CborValue *it,
     if (err) {
         return true;
     }
+    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - string_ptr: %s\n",
+           string_ptr);
+    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - size: %d\n", *output_size);
 
     // Copy the string data to the output buffer
     if (*output_size > 0 && output_ptr != NULL) {
@@ -68,14 +72,33 @@ bool cbor_read_string_or_byte_string(CborValue *it,
 
     // PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - size: %d\n",
     //        (uint32_t)*output_size);
-    // PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - output_ptr: 0x%.*H\n",
-    //        *output_size,
-    //        output_ptr);
+    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - output_ptr: 0x%.*H\n",
+           *output_size,
+           output_ptr);
+    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - output_ptr.str: %s\n",
+           output_ptr);
 
     return false;
 }
 
-CborError dumprecursive(CborValue *it, int nestingLevel) {
+void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
+    PRINTF("\nkm-logs - [signPLT.c] (add_char_array_to_buffer) - trying to add: %s\n", src);
+    if (dst->size - dst->offset < src_size) {
+        PRINTF(
+            "km-logs - [signPLT.c] (add_char_array_to_buffer) - src_size: 0x%08X, "
+            "dst->size-offset: "
+            "0x%08X\n",
+            src_size,
+            dst->size - dst->offset);
+        PRINTF("buffer overflow\n");
+        THROW(0x0001);
+    }
+    memcpy(dst->ptr + dst->offset, src, src_size);
+    dst->offset += src_size;
+}
+
+CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
+    char *temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
         CborType type = cbor_value_get_type(it);
@@ -87,25 +110,41 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
                 // recursive type
                 CborValue recursed;
                 LEDGER_ASSERT(cbor_value_is_container(it), "Should be a container but isnt");
-                PRINTF(type == CborArrayType ? "Array[\n" : "Map[\n");
+                if (type == CborArrayType) {
+                    temp = "[";
+                } else {
+                    temp = "{";
+                }
+                PRINTF("%s", temp);
+                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
-                err = dumprecursive(&recursed, nestingLevel + 1);
+                err = decodeCborRecursive(&recursed, nestingLevel + 1, out_buf);
                 if (err) return err;  // parse error
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;  // parse error
                 indent(nestingLevel);
-                PRINTF("]\n");
+                if (type == CborArrayType) {
+                    temp = "],";
+                } else {
+                    temp = "},";
+                }
+                PRINTF("%s", temp);
+                add_char_array_to_buffer(out_buf, temp, strlen(temp));
                 continue;
             }
 
             case CborIntegerType: {
                 int64_t val;
-                char temp[16];
+                char temp2[20];
+                char temp3[25];
                 cbor_value_get_int64(it, &val);  // can't fail
-                PRINTF("Int:");
-                format_i64(temp, sizeof(temp), val);
-                PRINTF("%s\n", temp);
+                format_i64(temp2, sizeof(temp2), val);
+                snprintf(temp3, sizeof(temp3), "Int:%s,", temp2);
+                // strcat(temp2, ",");
+                add_char_array_to_buffer(out_buf, temp3, strlen(temp3));
+                PRINTF("%s", temp3);
                 break;
             }
 
@@ -118,10 +157,12 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
                 if (err) return err;
                 char string_value[100] = {0};
                 if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
-                    PRINTF("format_hex error");
+                    PRINTF("format_hex error\n");
                     THROW(0x0010);
                 }
-
+                add_char_array_to_buffer(out_buf, "0x", 2);
+                add_char_array_to_buffer(out_buf, string_value, strlen(string_value));
+                add_char_array_to_buffer(out_buf, ",", 1);
                 PRINTF("ByteString(%d): 0x%s\n", buf_len, string_value);
                 break;
             }
@@ -133,12 +174,17 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
                 // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
                 err = cbor_read_string_or_byte_string(it, buf, &buf_len, true);
                 if (err) return err;
+                // null terminate the string
+                buf[buf_len] = '\0';
                 // char string_value[20];
                 // if (!format_hex(buf, buf_len, string_value, sizeof(string_value))) {
                 //     PRINTF("format_hex error");
                 //     THROW(0x0010);
                 // }
-                PRINTF("String(%d): %s\n", (uint32_t)buf_len, buf);
+                char temp2[256];
+                snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
+                PRINTF("%s", temp2);
+                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
                 // PRINTF("%.*H\n", buf_len, buf);
                 // err = cbor_value_dup_text_string(it, &buf, &n, it);
                 // if (err) return err;  // parse error
@@ -149,10 +195,13 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
 
             case CborTagType: {
                 CborTag tag;
-                char temp[16];
+                char temp2[16];
                 cbor_value_get_tag(it, &tag);  // can't fail
-                format_u64(temp, sizeof(temp), tag);
-                PRINTF("Tag(%s): ", temp);
+                format_u64(temp2, sizeof(temp2), tag);
+                char tag_str[32];
+                snprintf(tag_str, sizeof(tag_str), "Tag(%s):", temp2);
+                PRINTF("%s", tag_str);
+                add_char_array_to_buffer(out_buf, tag_str, strlen(tag_str));
 
                 break;
             }
@@ -165,22 +214,29 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
             }
 
             case CborNullType:
+                temp = "null,";
                 PRINTF("null");
+                add_char_array_to_buffer(out_buf, temp, strlen(temp));
                 break;
 
             case CborUndefinedType:
+                temp = "undefined,";
                 PRINTF("undefined");
+                add_char_array_to_buffer(out_buf, temp, strlen(temp));
                 break;
 
             case CborBooleanType: {
                 bool val;
                 cbor_value_get_boolean(it, &val);  // can't fail
-                PRINTF(val ? "true" : "false");
+                temp = val ? "true," : "false,";
+                PRINTF(temp);
+                add_char_array_to_buffer(out_buf, temp, strlen(temp));
                 break;
             }
 
             case CborDoubleType: {
                 double val;
+                char temp2[32];
                 if (false) {
                     float f;
                     case CborFloatType:
@@ -189,13 +245,18 @@ CborError dumprecursive(CborValue *it, int nestingLevel) {
                 } else {
                     cbor_value_get_double(it, &val);
                 }
-                PRINTF("Double: 0x%08x\n", val);
+                snprintf(temp2, sizeof(temp2), "Double:0x%08x,", (uint32_t)val);
+                PRINTF("Double: 0x%08x\n", (uint32_t)val);
+                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
                 break;
             }
             case CborHalfFloatType: {
                 uint16_t val;
+                char temp2[16];
                 cbor_value_get_half_float(it, &val);
+                snprintf(temp2, sizeof(temp2), "__f16(%04x),", val);
                 PRINTF("__f16(%04x)\n", val);
+                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
                 break;
             }
 
@@ -224,11 +285,33 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         PRINTF("km-logs - [signPLT.c] CBOR parser init failed\n");
         return false;
     }
-    err = dumprecursive(&it, 0);
+
+    char temp[MAX_PLT_DIPLAY_STR] = {0};
+    buffer_t out_buf = {.ptr = temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
+    tag_list_t tag_list;  // initiate an empty tag_list_t
+    err = decodeCborRecursive(&it, 0, &out_buf);
     if (err) {
-        PRINTF("Error while parsing cbor");
+        PRINTF("Error while decoding cbor\n");
         THROW(ERROR_INVALID_PARAM);
     }
+
+    PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+
+    if (!parse_tags_in_buffer(&out_buf, &tag_list)) {
+        PRINTF("Error while parsing cbor tags\n");
+        THROW(ERROR_INVALID_PARAM);
+    }
+    if (sizeof(global.pltOperationDisplay) < out_buf.size) {
+        PRINTF("display str is too small for value %d < %d\n",
+               sizeof(global.pltOperationDisplay),
+               out_buf.size);
+        THROW(ERROR_BUFFER_OVERFLOW);
+    }
+    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+    memcpy(global.pltOperationDisplay, out_buf.ptr, out_buf.size);
+    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - global.pltOperationDisplay: %s\n",
+           global.pltOperationDisplay);
+
     return true;
 }
 
@@ -239,6 +322,7 @@ void handleSignPltTransaction(uint8_t *cdata,
                               volatile unsigned int *flags,
                               bool isInitialCall) {
     uint8_t remainingDataLength = lc;
+
     PRINTF(
         "km-logs [signPLT.c] (handleSignPltTransaction) - Starting handling of plt transaction\n");
     PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - isInitialCall:  %s\n",
@@ -263,7 +347,7 @@ void handleSignPltTransaction(uint8_t *cdata,
         remainingDataLength--;
 
         if (remainingDataLength < ctx->tokenIdLength) {
-            PRINTF("Not enough data left");
+            PRINTF("Not enough data left\n");
             THROW(ERROR_INVALID_PARAM);
         }
         memcpy(ctx->tokenId, cdata, ctx->tokenIdLength);
@@ -281,7 +365,6 @@ void handleSignPltTransaction(uint8_t *cdata,
         cdata += 4;
         remainingDataLength -= 4;
         // Parse Operations
-        // Hash it all
         if (!parsePltCbor(cdata, remainingDataLength)) {
             PRINTF("Cbor parsing failed\n");
             THROW(ERROR_INVALID_PARAM);
@@ -297,10 +380,9 @@ void handleSignPltTransaction(uint8_t *cdata,
         // }
 
         // ctx->state = TX_TRANSFER_MEMO_INITIAL;
-        PRINTF("km-logs - about to be cool\n");
-        PRINTF("km-logs - cool\n");
-        io_send_sw(SUCCESS);
 
+        // io_send_sw(SUCCESS);
+        uiPltOperationDisplay();
     }
     // else if (p1 == P1_MEMO && ctx->state == TX_TRANSFER_MEMO_INITIAL) {
     //     updateHash((cx_hash_t *)&tx_state->hash, cdata, dataLength);

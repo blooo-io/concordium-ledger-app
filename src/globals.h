@@ -60,6 +60,8 @@
 #define ACCOUNT_TRANSACTION_HEADER_LENGTH 60
 #define UPDATE_HEADER_LENGTH              28
 
+#define MAX_PLT_DIPLAY_STR 220
+
 /**
  * Instruction class of the Concordium application.
  */
@@ -177,6 +179,7 @@ typedef union {
     initContract_t initContract;
     updateContract_t updateContract;
     transactionWithDataBlob_t withDataBlob;
+    char pltOperationDisplay[MAX_PLT_DIPLAY_STR];
 } instructionContext;
 extern instructionContext global;
 
@@ -211,6 +214,7 @@ enum {
     ERROR_INVALID_NAME_LENGTH = 0x6B0A,
     ERROR_INVALID_PARAMS_LENGTH = 0x6B0B,
     ERROR_INVALID_MODULE_REF = 0x6B09,
+    ERROR_INVALID_COININFO = 0x6B0C,
     // Error codes from the Ledger firmware
     ERROR_DEVICE_LOCKED = 0x530C,
     SW_WRONG_DATA_LENGTH = 0x6A87

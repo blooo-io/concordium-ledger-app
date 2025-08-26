@@ -413,3 +413,92 @@ size_t hashAndLoadU64Ratio(uint8_t *cdata, uint8_t *dst, uint8_t sizeOfDst) {
     numberToText(dst + numLength + 3, sizeOfDst - (numLength + 3), denominator);
     return 16;
 }
+
+bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, size_t output_size) {
+    // Hex string must have even length (each byte = 2 hex chars)
+    if (hex_len % 2 != 0) {
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        return false;
+    }
+
+    // Calculate number of bytes
+    size_t byte_count = hex_len / 2;
+
+    // Check if we have enough space in output buffer
+    if (byte_count > output_size) {
+        PRINTF("Output buffer too small: need %d bytes, have %d\n",
+               (int)byte_count,
+               (int)output_size);
+        return false;
+    }
+
+    // Convert hex pairs to bytes
+    for (size_t i = 0; i < byte_count; i++) {
+        // Get high and low nibbles
+        char high = hex_str[i * 2];
+        char low = hex_str[i * 2 + 1];
+
+        // Validate hex characters
+        if (!((high >= '0' && high <= '9') || (high >= 'a' && high <= 'f') ||
+              (high >= 'A' && high <= 'F')) ||
+            !((low >= '0' && low <= '9') || (low >= 'a' && low <= 'f') ||
+              (low >= 'A' && low <= 'F'))) {
+            PRINTF("Invalid hex character at position %d: '%c%c'\n", (int)i, high, low);
+            return false;
+        }
+
+        uint8_t byte_val = 0;
+
+        // High nibble
+        if (high >= '0' && high <= '9')
+            byte_val = (high - '0') << 4;
+        else if (high >= 'a' && high <= 'f')
+            byte_val = (high - 'a' + 10) << 4;
+        else if (high >= 'A' && high <= 'F')
+            byte_val = (high - 'A' + 10) << 4;
+
+        // Low nibble
+        if (low >= '0' && low <= '9')
+            byte_val |= (low - '0');
+        else if (low >= 'a' && low <= 'f')
+            byte_val |= (low - 'a' + 10);
+        else if (low >= 'A' && low <= 'F')
+            byte_val |= (low - 'A' + 10);
+
+        output[i] = byte_val;
+    }
+
+    return true;
+}
+
+bool hex_string_to_ascii(const char *hex_str, size_t hex_len, char *output, size_t output_size) {
+    // Hex string must have even length (each byte = 2 hex chars)
+    if (hex_len % 2 != 0) {
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        return false;
+    }
+
+    // Calculate number of bytes
+    size_t byte_count = hex_len / 2;
+
+    // Check if we have enough space in output buffer
+    if (byte_count > output_size) {
+        PRINTF("Output buffer too small: need %d bytes, have %d\n",
+               (int)byte_count,
+               (int)output_size);
+        return false;
+    }
+    uint8_t bytes[100];
+
+    if (!hex_string_to_bytes(hex_str, hex_len, bytes, sizeof(bytes))) {
+        return false;
+    }
+
+    // Actually convert to text (not nibbles!)
+    for (size_t i = 0; i < byte_count; i++) {
+        output[i] = (char)bytes[i];
+    }
+    output[byte_count] = '\0';  // Null terminate
+
+    return true;
+}

@@ -70,3 +70,5 @@ void uiSignScheduledTransferPairFlowDisplay(void);
 void uiDeployModuleDisplay(void);
 void uiInitContractDisplay(void);
 void uiUpdateContractDisplay(void);
+
+void uiPltOperationDisplay(void);

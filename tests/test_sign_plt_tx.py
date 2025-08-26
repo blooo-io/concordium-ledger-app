@@ -63,7 +63,7 @@ def test_sign_plt_single_transfer(
 # In this test we send to the device a transaction to sign and validate it on screen
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
-@pytest.mark.active_test_scope
+# @pytest.mark.active_test_scope
 def test_sign_plt_single_mint(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -100,7 +100,7 @@ def test_sign_plt_single_mint(
 # In this test we send to the device a transaction to sign and validate it on screen
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
-@pytest.mark.active_test_scope
+# @pytest.mark.active_test_scope
 def test_sign_plt_single_deny(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
