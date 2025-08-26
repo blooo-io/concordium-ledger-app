@@ -5,6 +5,7 @@
 #include "ledger_assert.h"
 #include "format.h"  // format_i64, format_hex
 #include "cborStrParsing.h"
+#include "cborinternal_p.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
 // static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
@@ -64,8 +65,8 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
             "0x%08X\n",
             src_size,
             dst->size - dst->offset);
-        PRINTF("buffer overflow\n");
-        THROW(0x0001);
+        PRINTF("Buffer overflow\n");
+        THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy(dst->ptr + dst->offset, src, src_size);
     dst->offset += src_size;
@@ -108,17 +109,27 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 add_char_array_to_buffer(out_buf, temp, strlen(temp));
                 continue;
             }
-
             case CborIntegerType: {
-                int64_t val;
-                char temp2[20];
-                char temp3[25];
-                cbor_value_get_int64(it, &val);  // can't fail
-                format_i64(temp2, sizeof(temp2), val);
+                char temp2[25];  // 25 to handle max uint64
+                char temp3[30];  // 30 to handle the "Int:" prefix and max uint64
+                uint64_t raw_val = 0;
+
+                // Get the raw integer value first
+                if (cbor_value_get_raw_integer(it, &raw_val) != CborNoError) {
+                    PRINTF("cbor_value_get_raw_integer error\n");
+                }
+
+                if (cbor_value_is_negative_integer(it)) {
+                    // Handle negative integers
+                    int64_t signed_val = -(int64_t)(raw_val + 1);
+                    format_i64(temp2, sizeof(temp2), signed_val);
+                } else {
+                    // Handle positive integers
+                    format_u64(temp2, sizeof(temp2), raw_val);
+                }
+
                 snprintf(temp3, sizeof(temp3), "Int:%s,", temp2);
-                // strcat(temp2, ",");
                 add_char_array_to_buffer(out_buf, temp3, strlen(temp3));
-                PRINTF("%s", temp3);
                 break;
             }
 
