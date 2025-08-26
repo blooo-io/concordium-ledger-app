@@ -7,32 +7,6 @@
 #include "globals.h"
 
 /*******************************************************************************
- * CONSTANTS AND CONFIGURATION
- ******************************************************************************/
-
-/**
- * @def MAX_TAGS
- * @brief Maximum number of CBOR tags that can be extracted in a single operation
- *
- * This limit prevents memory exhaustion and ensures predictable memory usage
- * in the embedded environment. If more tags are encountered, only the first
- * MAX_TAGS will be processed.
- */
-#define MAX_TAGS 10
-
-/**
- * @def MAX_TAG_CONTENT_SIZE
- * @brief Maximum size in bytes for the content of a single CBOR tag
- *
- * This includes the delimiters (brackets/braces) and all nested content.
- * Content exceeding this size will be rejected to prevent buffer overflows.
- * The size is chosen to balance functionality with memory constraints.
- */
-#define MAX_TAG_CONTENT_SIZE 256
-
-#define MAX_TAG_PARSED_CONTENT_SIZE 100
-
-/*******************************************************************************
  * DATA STRUCTURES
  ******************************************************************************/
 

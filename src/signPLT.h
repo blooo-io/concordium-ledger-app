@@ -3,9 +3,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define MAX_TOKEN_ID_LENGTH 255
-#define MAX_CBOR_LENGTH     255
-#define MAX_PLT_DIPLAY_STR  220
+#define MAX_TAG_CONTENT_SIZE 256
+#define MAX_TAGS             24
+
+#define MAX_TAG_PARSED_CONTENT_SIZE 100
+#define MAX_TOKEN_ID_LENGTH         255
+#define MAX_CBOR_LENGTH             900
+#define MAX_PLT_DIPLAY_STR          2000
 
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more);
 
