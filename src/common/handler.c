@@ -43,7 +43,7 @@ int handler(uint8_t INS,
             break;
         case INS_EXPORT_PRIVATE_KEY_NEW:
             LEDGER_ASSERT(cdata != NULL, "NULL cdata");
-            handleExportPrivateKeyNewPath(cdata, p1, p2, lc, flags);
+            handleExportPrivateKeyNewPath(cdata, p1, lc, flags);
             break;
         case INS_TRANSFER_TO_PUBLIC:
             LEDGER_ASSERT(cdata != NULL, "NULL cdata");

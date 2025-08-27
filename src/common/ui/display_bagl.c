@@ -89,6 +89,7 @@ UX_STEP_CB(ux_sign_flow_shared_decline,
            {&C_icon_crossmark, "Decline to", "sign transaction"});
 UX_FLOW(ux_sign_flow_shared, &ux_sign_flow_shared_sign, &ux_sign_flow_shared_decline);
 
+// Export private key legacy path
 UX_STEP_NOCB(ux_export_private_key_0_step,
              nn,
              {(char *)global.exportPrivateKeyContext.displayHeader,
@@ -111,6 +112,50 @@ void uiExportPrivateKey(volatile unsigned int *flags) {
     *flags |= IO_ASYNCH_REPLY;
 }
 
+UX_STEP_NOCB(ux_export_private_key_new_path_0_step,
+             pnn,
+             {
+                 &C_icon_eye,
+                 "Export",
+                 "private keys",
+             });
+UX_STEP_NOCB(ux_export_private_key_new_path_1_step,
+             bnnn_paging,
+             {
+                 .title = (char *)global.exportPrivateKeyContext.displayHeader,
+                 .text = (char *)global.exportPrivateKeyContext.display,
+             });
+UX_STEP_CB(ux_export_private_key_new_path_reject_step,
+           pb,
+           sendUserRejection(),
+           {
+               &C_icon_crossmark,
+               "Reject",
+           });
+UX_STEP_CB(ux_export_private_key_new_path_approve_step,
+           pb,
+           sendPrivateKeysNewPath(),
+           {
+               &C_icon_validate_14,
+               "Accept",
+           });
+// UX_STEP_CB(ux_export_private_key_new_path_accept_step,
+//            pnn,
+//            sendPrivateKeysNewPath(),
+//            {&C_icon_validate_14, "Accept", "export private keys"});
+// UX_STEP_CB(ux_export_private_key_new_path_decline_step,
+//            pnn,
+//            sendUserRejection(),
+//            {&C_icon_crossmark, "Decline to", "export private keys"});
+UX_FLOW(ux_export_private_key_new_path,
+        &ux_export_private_key_new_path_0_step,
+        &ux_export_private_key_new_path_1_step,
+        &ux_export_private_key_new_path_approve_step,
+        &ux_export_private_key_new_path_reject_step);
+void uiExportPrivateKeysNewPath(volatile unsigned int *flags) {
+    ux_flow_init(0, ux_export_private_key_new_path, NULL);
+    *flags |= IO_ASYNCH_REPLY;
+}
 // Baker
 
 static signConfigureBaker_t *ctx_conf_baker = &global.signConfigureBaker;

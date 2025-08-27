@@ -1,4 +1,5 @@
 #include "globals.h"
+#include "io.h"
 
 // This class allows for the export of a number of very specific private keys. These private keys
 // are made exportable as they are used in computations that are not feasible to carry out on the
@@ -6,6 +7,26 @@
 // possible to export keys that are used for signing.
 static const uint32_t HARDENED_OFFSET = 0x80000000;
 static exportPrivateKeyContext_t *ctx = &global.exportPrivateKeyContext;
+
+#define ACCOUNT_SUBTREE 0
+#define NORMAL_ACCOUNTS 0
+//// LEGACY PATHS ////
+// Export the PRF key
+#define P1_LEGACY_PRF_KEY          0x00
+#define P1_LEGACY_PRF_KEY_RECOVERY 0x01
+// Export the PRF key and the IdCredSec
+#define P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC 0x02
+
+// Export seeds (Deprecated)
+#define P2_LEGACY_SEED 0x01
+// Export the BLS keys
+#define P2_LEGACY_KEY 0x02
+//// NEW PATHS ////
+#define P1_IDENTITY_CREDENTIAL_CREATION 0x00
+#define P1_ACCOUNT_CREATION             0x01
+#define P1_ID_RECOVERY                  0x02
+#define P1_ACCOUNT_CREDENTIAL_DISCOVERY 0x03
+#define P1_CREATION_OF_ZK_PROOF         0x04
 
 void exportPrivateKeySeed(void) {
     cx_ecfp_private_key_t privateKey;
@@ -95,6 +116,148 @@ void exportPrivateKeyBls(void) {
     END_TRY;
 }
 
+int editDerivationPathPerKeyType(uint32_t *derivationPath,
+                                 uint8_t derivationPathLength,
+                                 uint8_t derivationPathKeyType,
+                                 uint32_t account) {
+    if (derivationPathLength > MAX_DERIVATION_PATH_LENGTH) {
+        PRINTF(
+            "km-logs - [exportPrivateKey.c] (editDerivationPathPerKeyType) - Derivation path "
+            "length is too long\n");
+        return 0;
+    }
+    switch (derivationPathKeyType) {
+        case NEW_ID_CRED_SEC:
+        case NEW_PRF_KEY:
+        case NEW_SIGNATURE_BLINDING_RANDOMNESS:
+            derivationPath[derivationPathLength++] = derivationPathKeyType | HARDENED_OFFSET;
+            return derivationPathLength;
+        case NEW_COMMITMENT_RANDOMNESS:
+            derivationPath[derivationPathLength++] = derivationPathKeyType | HARDENED_OFFSET;
+            derivationPath[derivationPathLength++] = account | HARDENED_OFFSET;
+            return derivationPathLength;
+        default:
+            PRINTF(
+                "km-logs - [exportPrivateKey.c] (editDerivationPathPerKeyType) - Invalid "
+                "derivation path key type: %d\n",
+                derivationPathKeyType);
+            return 0;
+    }
+}
+
+int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
+                                       uint32_t identityProvider,
+                                       uint32_t identity,
+                                       uint32_t account,
+                                       uint8_t *outputPrivateKey,
+                                       size_t outputPrivateKeySize) {
+    uint32_t derivationPath[MAX_DERIVATION_PATH_LENGTH];
+    uint8_t derivationPathLength = 4;
+    cx_ecfp_private_key_t tempPrivateKeyEd25519;
+    uint8_t tempPrivateKey[32];
+
+    uint8_t keysToExport[MAX_KEYS_TO_EXPORT] = {0, 0, 0};
+    uint8_t keysToExportLength = 0;
+
+    // Set the derivation path
+    derivationPath[0] = NEW_PURPOSE | HARDENED_OFFSET;
+    derivationPath[1] = NEW_COIN_TYPE | HARDENED_OFFSET;
+    derivationPath[2] = identityProvider | HARDENED_OFFSET;
+    derivationPath[3] = identity | HARDENED_OFFSET;
+
+    // Set the keys to export depending on the purpose
+    PRINTF("km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Purpose: %d\n",
+           purpose);
+    switch (purpose) {
+        case P1_IDENTITY_CREDENTIAL_CREATION:
+            keysToExport[keysToExportLength++] = NEW_ID_CRED_SEC;
+            keysToExport[keysToExportLength++] = NEW_PRF_KEY;
+            keysToExport[keysToExportLength++] = NEW_SIGNATURE_BLINDING_RANDOMNESS;
+            break;
+        case P1_ACCOUNT_CREATION:
+            keysToExport[keysToExportLength++] = NEW_PRF_KEY;
+            keysToExport[keysToExportLength++] = NEW_ID_CRED_SEC;
+            keysToExport[keysToExportLength++] = NEW_COMMITMENT_RANDOMNESS;
+            break;
+        case P1_ID_RECOVERY:
+            keysToExport[keysToExportLength++] = NEW_ID_CRED_SEC;
+            keysToExport[keysToExportLength++] = NEW_SIGNATURE_BLINDING_RANDOMNESS;
+            break;
+        case P1_ACCOUNT_CREDENTIAL_DISCOVERY:
+            keysToExport[keysToExportLength++] = NEW_PRF_KEY;
+            break;
+        case P1_CREATION_OF_ZK_PROOF:
+            keysToExport[keysToExportLength++] = NEW_COMMITMENT_RANDOMNESS;
+            break;
+        default:
+            THROW(ERROR_INVALID_PARAM);
+    }
+
+    // check if the buffer is big enough
+    if (keysToExportLength * LENGTH_AND_PRIVATE_KEY_SIZE > outputPrivateKeySize) {
+        PRINTF(
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Buffer "
+            "overflow, there is not enough space for the keys in the output buffer\n");
+        THROW(ERROR_BUFFER_OVERFLOW);
+    }
+
+    uint8_t tx = 0;
+
+    // iterate over the keys to export
+    for (int keyIndex = 0; keyIndex < keysToExportLength; keyIndex++) {
+        // Edit the derivation path according to the key to export
+        derivationPathLength = editDerivationPathPerKeyType(derivationPath,
+                                                            derivationPathLength,
+                                                            keysToExport[keyIndex],
+                                                            account);
+        if (derivationPathLength == 0) {
+            PRINTF(
+                "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Derivation "
+                "path length is too long\n");
+            THROW(ERROR_BUFFER_OVERFLOW);
+        }
+
+        // PRINT THE DERIVATION PATH
+        PRINTF(
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Keys to export: "
+            "%d\n",
+            keysToExport[keyIndex]);
+        PRINTF(
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Derivation path "
+            "length: %d\n",
+            derivationPathLength);
+        PRINTF(
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - DERIVATION "
+            "PATH: ");
+        for (int j = 0; j < derivationPathLength; j++) {
+            PRINTF("%d ", derivationPath[j]);
+        }
+        PRINTF("\n");
+
+        outputPrivateKey[tx++] = 32;  // length of the private key
+        if (keysToExport[keyIndex] == NEW_COMMITMENT_RANDOMNESS) {
+            // export raw key
+            getPrivateKey(derivationPath, derivationPathLength, &tempPrivateKeyEd25519);
+            for (int i = 0; i < 32; i++) {
+                tempPrivateKey[i] = tempPrivateKeyEd25519.d[i];
+            }
+        } else {
+            // export bls key
+            getBlsPrivateKey(derivationPath,
+                             derivationPathLength,
+                             tempPrivateKey,
+                             sizeof(tempPrivateKey));
+        }
+
+        for (int i = 0; i < 32; i++) {
+            outputPrivateKey[tx++] = tempPrivateKey[i];
+        }
+    }
+    explicit_bzero(&tempPrivateKey, sizeof(tempPrivateKey));
+    explicit_bzero(&tempPrivateKeyEd25519, sizeof(tempPrivateKeyEd25519));
+    return tx;
+}
+
 void exportPrivateKey(void) {
     if (ctx->exportSeed) {
         exportPrivateKeySeed();
@@ -102,20 +265,6 @@ void exportPrivateKey(void) {
         exportPrivateKeyBls();
     }
 }
-
-#define ACCOUNT_SUBTREE 0
-#define NORMAL_ACCOUNTS 0
-
-// Export the PRF key
-#define P1_LEGACY_PRF_KEY          0x00
-#define P1_LEGACY_PRF_KEY_RECOVERY 0x01
-// Export the PRF key and the IdCredSec
-#define P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC 0x02
-
-// Export seeds (Deprecated)
-#define P2_LEGACY_SEED 0x01
-// Export the BLS keys
-#define P2_LEGACY_KEY 0x02
 
 void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
                                       uint8_t p1,
@@ -169,15 +318,95 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
 
 void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
                                    uint8_t p1,
-                                   uint8_t p2,
                                    uint8_t lc,
                                    volatile unsigned int *flags) {
-    // if ((p1 != P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC && p1 != P1_LEGACY_PRF_KEY && p1 !=
-    // P1_LEGACY_PRF_KEY_RECOVERY) ||
-    //     (p2 != P2_LEGACY_KEY && p2 != P2_LEGACY_SEED)) {
-    //     THROW(ERROR_INVALID_PARAM);
-    // }
-    // size_t offset = 0;
+    if ((p1 != P1_IDENTITY_CREDENTIAL_CREATION && p1 != P1_ACCOUNT_CREATION &&
+         p1 != P1_ID_RECOVERY && p1 != P1_ACCOUNT_CREDENTIAL_DISCOVERY &&
+         p1 != P1_CREATION_OF_ZK_PROOF)) {
+        THROW(ERROR_INVALID_PARAM);
+    }
+
+    size_t offset = 0;
+    uint8_t remainingDataLength = lc - offset;
+    uint32_t purpose = U4BE(dataBuffer, offset);
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Purpose: %d\n",
+           purpose);
+    offset += 4;
+    remainingDataLength -= 4;
+    if (remainingDataLength < 4) {
+        THROW(ERROR_INVALID_PATH);
+    }
+    uint32_t identityProvider = U4BE(dataBuffer, offset);
+    PRINTF(
+        "km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Identity Provider: %d\n",
+        identityProvider);
+    offset += 4;
+    remainingDataLength -= 4;
+    if (remainingDataLength < 4) {
+        THROW(ERROR_INVALID_PATH);
+    }
+    uint32_t identity = U4BE(dataBuffer, offset);
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Identity: %d\n",
+           identity);
+    uint32_t account = 0xFFFFFFFF;
+    if (p1 == P1_ACCOUNT_CREATION || p1 == P1_CREATION_OF_ZK_PROOF) {
+        if (remainingDataLength < 4) {
+            THROW(ERROR_INVALID_PATH);
+        }
+        account = U4BE(dataBuffer, offset);
+        offset += 4;
+        remainingDataLength -= 4;
+    }
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Account: %d\n",
+           account);
+
+    exportNewPathPrivateKeysForPurpose(purpose,
+                                       identityProvider,
+                                       identity,
+                                       account,
+                                       ctx->outputPrivateKeys,
+                                       sizeof(ctx->outputPrivateKeys));
+    ////// Set up the display //////
+    offset = 0;
+    // Add the identity provider to the display
+    memmove(ctx->display, "IDP#", 4);
+    offset += 4;
+    offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identityProvider);
+    // Remove the null terminator
+    offset -= 1;
+    // Add the identity to the display
+    memmove(ctx->display + offset, " ID#", 4);
+    offset += 4;
+    offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
+
+    if (p1 == P1_IDENTITY_CREDENTIAL_CREATION) {
+        memmove(ctx->displayHeader, "Identity Credential Creation", 30);
+    } else if (p1 == P1_ACCOUNT_CREATION) {
+        memmove(ctx->displayHeader, "Account Creation", 18);
+        offset -= 1;
+        // Add the account to the display
+        memmove(ctx->display + offset, " ACCOUNT#", 9);
+        offset += 9;
+        bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, account);
+    } else if (p1 == P1_ID_RECOVERY) {
+        memmove(ctx->displayHeader, "ID Recovery", 12);
+    } else if (p1 == P1_ACCOUNT_CREDENTIAL_DISCOVERY) {
+        memmove(ctx->displayHeader, "Account Credential Discovery", 30);
+        // Remove the null terminator
+    } else if (p1 == P1_CREATION_OF_ZK_PROOF) {
+        memmove(ctx->displayHeader, "ZK Proof Creation", 19);
+        offset -= 1;
+        // Add the account to the display
+        memmove(ctx->display + offset, " ACCOUNT#", 9);
+        offset += 9;
+        bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, account);
+    }
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Display header: %s\n",
+           ctx->displayHeader);
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Display: %s\n",
+           ctx->display);
+
+    uiExportPrivateKeysNewPath(flags);
 
     // ctx->isNewPath = true;
     // uint8_t remainingDataLength = lc - offset;
@@ -241,4 +470,12 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
     // }
 
     // uiExportPrivateKey(flags);
+}
+
+void sendPrivateKeysNewPath(void) {
+    if (sizeof(ctx->outputPrivateKeys) > sizeof(G_io_apdu_buffer)) {
+        THROW(ERROR_BUFFER_OVERFLOW);
+    }
+    memmove(G_io_apdu_buffer, ctx->outputPrivateKeys, sizeof(ctx->outputPrivateKeys));
+    sendSuccess(sizeof(ctx->outputPrivateKeys));
 }
