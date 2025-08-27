@@ -779,7 +779,7 @@ bool parse_tags_in_buffer(buffer_t* buffer, tag_list_t* tag_list) {
             good1 = interpret_tag(&tag_list->tags[i]);
             good2 = replace_tag_with_parsed_content(buffer, tag_list->tags[i]);
         }
-        if (!good1 | !good2) {
+        if (!good1 || !good2) {
             PRINTF("Error while interpreting or replacing tags\n");
             return false;
         }
