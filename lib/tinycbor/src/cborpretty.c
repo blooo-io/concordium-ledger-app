@@ -22,10 +22,10 @@
 **
 ****************************************************************************/
 
-#define _BSD_SOURCE 1
+#define _BSD_SOURCE     1
 #define _DEFAULT_SOURCE 1
 #ifndef __STDC_LIMIT_MACROS
-#  define __STDC_LIMIT_MACROS 1
+#define __STDC_LIMIT_MACROS 1
 #endif
 
 #include "cbor.h"
@@ -81,27 +81,17 @@
  * \par Integrals (unsigned and negative)
  *      Base-10 (decimal) text representation of the value
  * \par Byte strings:
- *      <tt>"h'"</tt> followed by the Base16 (hex) representation of the binary data, followed by an ending quote (')
- * \par Text strings:
- *      C-style escaped string in quotes, with C11/C++11 escaping of Unicode codepoints above U+007F.
- * \par Tags:
- *      Tag value, with the tagged value in parentheses. No special encoding of the tagged value is performed.
- * \par Simple types:
- *      <tt>"simple(nn)"</tt> where \c nn is the simple value
- * \par Null:
- *      \c null
- * \par Undefined:
- *      \c undefined
- * \par Booleans:
- *      \c true or \c false
- * \par Floating point:
- *      If NaN or infinite, the actual words \c NaN or \c infinite.
- *      Otherwise, the decimal representation with as many digits as necessary to ensure no loss of information.
- *      By default, float values are suffixed by "f" and half-float values suffixed by "f16" (doubles have no suffix).
- *      If the CborPrettyNumericEncodingIndicators flag is active, the values instead are encoded following the
- *      Section 6 recommended encoding indicators: float values are suffixed with "_2" and half-float with "_1".
- *      A decimal point is always present.
- * \par Arrays:
+ *      <tt>"h'"</tt> followed by the Base16 (hex) representation of the binary data, followed by an
+ * ending quote (') \par Text strings: C-style escaped string in quotes, with C11/C++11 escaping of
+ * Unicode codepoints above U+007F. \par Tags: Tag value, with the tagged value in parentheses. No
+ * special encoding of the tagged value is performed. \par Simple types: <tt>"simple(nn)"</tt> where
+ * \c nn is the simple value \par Null: \c null \par Undefined: \c undefined \par Booleans: \c true
+ * or \c false \par Floating point: If NaN or infinite, the actual words \c NaN or \c infinite.
+ *      Otherwise, the decimal representation with as many digits as necessary to ensure no loss of
+ * information. By default, float values are suffixed by "f" and half-float values suffixed by "f16"
+ * (doubles have no suffix). If the CborPrettyNumericEncodingIndicators flag is active, the values
+ * instead are encoded following the Section 6 recommended encoding indicators: float values are
+ * suffixed with "_2" and half-float with "_1". A decimal point is always present. \par Arrays:
  *      Comma-separated list of elements, enclosed in square brackets ("[" and "]").
  * \par Maps:
  *      Comma-separated list of key-value pairs, with the key and value separated
@@ -135,18 +125,19 @@
  * \enum CborPrettyFlags
  * The CborPrettyFlags enum contains flags that control the conversion of CBOR to text format.
  *
- * \value CborPrettyNumericEncodingIndicators   Use numeric encoding indicators instead of textual for float and half-float.
- * \value CborPrettyTextualEncodingIndicators   Use textual encoding indicators for float ("f") and half-float ("f16").
- * \value CborPrettyIndicateIndeterminateLength (default) Indicate when a map or array has indeterminate length.
- * \value CborPrettyIndicateOverlongNumbers     Indicate when a number or length was encoded with more bytes than needed.
- * \value CborPrettyShowStringFragments         If the byte or text string is transmitted in chunks, show each individually.
- * \value CborPrettyMergeStringFragment         Merge all chunked byte or text strings and display them in a single entry.
- * \value CborPrettyDefaultFlags                Default conversion flags.
+ * \value CborPrettyNumericEncodingIndicators   Use numeric encoding indicators instead of textual
+ * for float and half-float. \value CborPrettyTextualEncodingIndicators   Use textual encoding
+ * indicators for float ("f") and half-float ("f16"). \value CborPrettyIndicateIndeterminateLength
+ * (default) Indicate when a map or array has indeterminate length. \value
+ * CborPrettyIndicateOverlongNumbers     Indicate when a number or length was encoded with more
+ * bytes than needed. \value CborPrettyShowStringFragments         If the byte or text string is
+ * transmitted in chunks, show each individually. \value CborPrettyMergeStringFragment         Merge
+ * all chunked byte or text strings and display them in a single entry. \value
+ * CborPrettyDefaultFlags                Default conversion flags.
  */
 
 #ifndef CBOR_NO_FLOATING_POINT
-static inline bool convertToUint64(double v, uint64_t *absolute)
-{
+static inline bool convertToUint64(double v, uint64_t *absolute) {
     double supremum;
     v = fabs(v);
 
@@ -167,9 +158,8 @@ static inline bool convertToUint64(double v, uint64_t *absolute)
      *    result is either the nearest higher or nearest lower representable
      *    value, chosen in an implementation-defined manner.
      */
-    supremum = -2.0 * INT64_MIN;     /* -2 * (- 2^63) == 2^64 */
-    if (v >= supremum)
-        return false;
+    supremum = -2.0 * INT64_MIN; /* -2 * (- 2^63) == 2^64 */
+    if (v >= supremum) return false;
 
     /* Now we can convert, these two conversions cannot be UB */
     *absolute = v;
@@ -177,33 +167,28 @@ static inline bool convertToUint64(double v, uint64_t *absolute)
 }
 #endif
 
-static void printRecursionLimit(CborStreamFunction stream, void *out)
-{
+static void printRecursionLimit(CborStreamFunction stream, void *out) {
     stream(out, "<nesting too deep, recursion stopped>");
 }
 
-static CborError hexDump(CborStreamFunction stream, void *out, const void *ptr, size_t n)
-{
+static CborError hexDump(CborStreamFunction stream, void *out, const void *ptr, size_t n) {
     const uint8_t *buffer = (const uint8_t *)ptr;
     CborError err = CborNoError;
-    while (n-- && !err)
-        err = stream(out, "%02" PRIx8, *buffer++);
+    while (n-- && !err) err = stream(out, "%02" PRIx8, *buffer++);
 
     return err;
 }
 
 /* This function decodes buffer as UTF-8 and prints as escaped UTF-16.
  * On UTF-8 decoding error, it returns CborErrorInvalidUtf8TextString */
-static CborError utf8EscapedDump(CborStreamFunction stream, void *out, const void *ptr, size_t n)
-{
+static CborError utf8EscapedDump(CborStreamFunction stream, void *out, const void *ptr, size_t n) {
     const uint8_t *buffer = (const uint8_t *)ptr;
-    const uint8_t * const end = buffer + n;
+    const uint8_t *const end = buffer + n;
     CborError err = CborNoError;
 
     while (buffer < end && !err) {
         uint32_t uc = get_utf8(&buffer, end);
-        if (uc == ~0U)
-            return CborErrorInvalidUtf8TextString;
+        if (uc == ~0U) return CborErrorInvalidUtf8TextString;
 
         if (uc < 0x80) {
             /* single-byte UTF-8 */
@@ -215,26 +200,26 @@ static CborError utf8EscapedDump(CborStreamFunction stream, void *out, const voi
 
             /* print as an escape sequence */
             switch (uc) {
-            case '"':
-            case '\\':
-                break;
-            case '\b':
-                escaped = 'b';
-                break;
-            case '\f':
-                escaped = 'f';
-                break;
-            case '\n':
-                escaped = 'n';
-                break;
-            case '\r':
-                escaped = 'r';
-                break;
-            case '\t':
-                escaped = 't';
-                break;
-            default:
-                goto print_utf16;
+                case '"':
+                case '\\':
+                    break;
+                case '\b':
+                    escaped = 'b';
+                    break;
+                case '\f':
+                    escaped = 'f';
+                    break;
+                case '\n':
+                    escaped = 'n';
+                    break;
+                case '\r':
+                    escaped = 'r';
+                    break;
+                case '\t':
+                    escaped = 't';
+                    break;
+                default:
+                    goto print_utf16;
             }
             err = stream(out, "\\%c", escaped);
             continue;
@@ -243,11 +228,12 @@ static CborError utf8EscapedDump(CborStreamFunction stream, void *out, const voi
         /* now print the sequence */
         if (uc > 0xffffU) {
             /* needs surrogate pairs */
-            err = stream(out, "\\u%04" PRIX32 "\\u%04" PRIX32,
-                         (uc >> 10) + 0xd7c0,    /* high surrogate */
+            err = stream(out,
+                         "\\u%04" PRIX32 "\\u%04" PRIX32,
+                         (uc >> 10) + 0xd7c0, /* high surrogate */
                          (uc % 0x0400) + 0xdc00);
         } else {
-print_utf16:
+        print_utf16:
             /* no surrogate pair needed */
             err = stream(out, "\\u%04" PRIX32, uc);
         }
@@ -255,300 +241,287 @@ print_utf16:
     return err;
 }
 
-static const char *resolve_indicator(const uint8_t *ptr, const uint8_t *end, int flags)
-{
-    static const char indicators[8][3] = {
-        "_0", "_1", "_2", "_3",
-        "", "", "",             /* these are not possible */
-        "_"
-    };
-    const char *no_indicator = indicators[5];   /* empty string */
+static const char *resolve_indicator(const uint8_t *ptr, const uint8_t *end, int flags) {
+    static const char indicators[8][3] = {"_0",
+                                          "_1",
+                                          "_2",
+                                          "_3",
+                                          "",
+                                          "",
+                                          "", /* these are not possible */
+                                          "_"};
+    const char *no_indicator = indicators[5]; /* empty string */
     uint8_t additional_information;
     uint8_t expected_information;
     uint64_t value;
     CborError err;
 
-    if (ptr == end)
-        return NULL;    /* CborErrorUnexpectedEOF */
+    if (ptr == end) return NULL; /* CborErrorUnexpectedEOF */
 
     additional_information = (*ptr & SmallValueMask);
-    if (additional_information < Value8Bit)
-        return no_indicator;
+    if (additional_information < Value8Bit) return no_indicator;
 
     /* determine whether to show anything */
     if ((flags & CborPrettyIndicateIndeterminateLength) &&
-            additional_information == IndefiniteLength)
+        additional_information == IndefiniteLength)
         return indicators[IndefiniteLength - Value8Bit];
-    if ((flags & CborPrettyIndicateOverlongNumbers) == 0)
-        return no_indicator;
+    if ((flags & CborPrettyIndicateOverlongNumbers) == 0) return no_indicator;
 
     err = _cbor_value_extract_number(&ptr, end, &value);
-    if (err)
-        return NULL;    /* CborErrorUnexpectedEOF */
+    if (err) return NULL; /* CborErrorUnexpectedEOF */
 
     expected_information = Value8Bit - 1;
-    if (value >= Value8Bit)
-        ++expected_information;
-    if (value > 0xffU)
-        ++expected_information;
-    if (value > 0xffffU)
-        ++expected_information;
-    if (value > 0xffffffffU)
-        ++expected_information;
-    return expected_information == additional_information ?
-                no_indicator :
-                indicators[additional_information - Value8Bit];
+    if (value >= Value8Bit) ++expected_information;
+    if (value > 0xffU) ++expected_information;
+    if (value > 0xffffU) ++expected_information;
+    if (value > 0xffffffffU) ++expected_information;
+    return expected_information == additional_information
+               ? no_indicator
+               : indicators[additional_information - Value8Bit];
 }
 
-static const char *get_indicator(const CborValue *it, int flags)
-{
+static const char *get_indicator(const CborValue *it, int flags) {
     return resolve_indicator(it->ptr, it->parser->end, flags);
 }
 
-static CborError value_to_pretty(CborStreamFunction stream, void *out, CborValue *it, int flags, int recursionsLeft);
-static CborError container_to_pretty(CborStreamFunction stream, void *out, CborValue *it, CborType containerType,
-                                     int flags, int recursionsLeft)
-{
+static CborError value_to_pretty(CborStreamFunction stream,
+                                 void *out,
+                                 CborValue *it,
+                                 int flags,
+                                 int recursionsLeft);
+static CborError container_to_pretty(CborStreamFunction stream,
+                                     void *out,
+                                     CborValue *it,
+                                     CborType containerType,
+                                     int flags,
+                                     int recursionsLeft) {
     const char *comma = "";
     CborError err = CborNoError;
 
     if (!recursionsLeft) {
         printRecursionLimit(stream, out);
-        return err;     /* do allow the dumping to continue */
+        return err; /* do allow the dumping to continue */
     }
 
     while (!cbor_value_at_end(it) && !err) {
         err = stream(out, "%s", comma);
         comma = ", ";
 
-        if (!err)
-            err = value_to_pretty(stream, out, it, flags, recursionsLeft);
+        if (!err) err = value_to_pretty(stream, out, it, flags, recursionsLeft);
 
-        if (containerType == CborArrayType)
-            continue;
+        if (containerType == CborArrayType) continue;
 
         /* map: that was the key, so get the value */
-        if (!err)
-            err = stream(out, ": ");
-        if (!err)
-            err = value_to_pretty(stream, out, it, flags, recursionsLeft);
+        if (!err) err = stream(out, ": ");
+        if (!err) err = value_to_pretty(stream, out, it, flags, recursionsLeft);
     }
     return err;
 }
 
-static CborError value_to_pretty(CborStreamFunction stream, void *out, CborValue *it, int flags, int recursionsLeft)
-{
+static CborError value_to_pretty(CborStreamFunction stream,
+                                 void *out,
+                                 CborValue *it,
+                                 int flags,
+                                 int recursionsLeft) {
     CborError err = CborNoError;
     CborType type = cbor_value_get_type(it);
     switch (type) {
-    case CborArrayType:
-    case CborMapType: {
-        /* recursive type */
-        CborValue recursed;
-        const char *indicator = get_indicator(it, flags);
-        const char *space = *indicator ? " " : indicator;
+        case CborArrayType:
+        case CborMapType: {
+            /* recursive type */
+            CborValue recursed;
+            const char *indicator = get_indicator(it, flags);
+            const char *space = *indicator ? " " : indicator;
 
-        err = stream(out, "%c%s%s", type == CborArrayType ? '[' : '{', indicator, space);
-        if (err)
-            return err;
+            err = stream(out, "%c%s%s", type == CborArrayType ? '[' : '{', indicator, space);
+            if (err) return err;
 
-        err = cbor_value_enter_container(it, &recursed);
-        if (err) {
-            it->ptr = recursed.ptr;
-            return err;       /* parse error */
+            err = cbor_value_enter_container(it, &recursed);
+            if (err) {
+                it->ptr = recursed.ptr;
+                return err; /* parse error */
+            }
+            err = container_to_pretty(stream, out, &recursed, type, flags, recursionsLeft - 1);
+            if (err) {
+                it->ptr = recursed.ptr;
+                return err; /* parse error */
+            }
+            err = cbor_value_leave_container(it, &recursed);
+            if (err) return err; /* parse error */
+
+            return stream(out, type == CborArrayType ? "]" : "}");
         }
-        err = container_to_pretty(stream, out, &recursed, type, flags, recursionsLeft - 1);
-        if (err) {
-            it->ptr = recursed.ptr;
-            return err;       /* parse error */
-        }
-        err = cbor_value_leave_container(it, &recursed);
-        if (err)
-            return err;       /* parse error */
 
-        return stream(out, type == CborArrayType ? "]" : "}");
-    }
+        case CborIntegerType: {
+            uint64_t val;
+            cbor_value_get_raw_integer(it, &val); /* can't fail */
 
-    case CborIntegerType: {
-        uint64_t val;
-        cbor_value_get_raw_integer(it, &val);    /* can't fail */
-
-        if (cbor_value_is_unsigned_integer(it)) {
-            err = stream(out, "%" PRIu64, val);
-        } else {
-            /* CBOR stores the negative number X as -1 - X
-             * (that is, -1 is stored as 0, -2 as 1 and so forth) */
-            if (++val) {                /* unsigned overflow may happen */
-                err = stream(out, "-%" PRIu64, val);
+            if (cbor_value_is_unsigned_integer(it)) {
+                err = stream(out, "%" PRIu64, val);
             } else {
-                /* overflown
-                 *   0xffff`ffff`ffff`ffff + 1 =
-                 * 0x1`0000`0000`0000`0000 = 18446744073709551616 (2^64) */
-                err = stream(out, "-18446744073709551616");
+                /* CBOR stores the negative number X as -1 - X
+                 * (that is, -1 is stored as 0, -2 as 1 and so forth) */
+                if (++val) { /* unsigned overflow may happen */
+                    err = stream(out, "-%" PRIu64, val);
+                } else {
+                    /* overflown
+                     *   0xffff`ffff`ffff`ffff + 1 =
+                     * 0x1`0000`0000`0000`0000 = 18446744073709551616 (2^64) */
+                    err = stream(out, "-18446744073709551616");
+                }
             }
-        }
-        if (!err)
-            err = stream(out, "%s", get_indicator(it, flags));
-        break;
-    }
-
-    case CborByteStringType:
-    case CborTextStringType: {
-        size_t n = 0;
-        const void *ptr;
-        bool showingFragments = (flags & CborPrettyShowStringFragments) && !cbor_value_is_length_known(it);
-        const char *separator = "";
-        char close = '\'';
-        char open[3] = "h'";
-        const char *indicator = NULL;
-
-        if (type == CborTextStringType) {
-            close = open[0] = '"';
-            open[1] = '\0';
+            if (!err) err = stream(out, "%s", get_indicator(it, flags));
+            break;
         }
 
-        if (showingFragments) {
-            err = stream(out, "(_ ");
-            if (!err)
-                err = _cbor_value_prepare_string_iteration(it);
-        } else {
-            err = stream(out, "%s", open);
-        }
+        case CborByteStringType:
+        case CborTextStringType: {
+            size_t n = 0;
+            const void *ptr;
+            bool showingFragments =
+                (flags & CborPrettyShowStringFragments) && !cbor_value_is_length_known(it);
+            const char *separator = "";
+            char close = '\'';
+            char open[3] = "h'";
+            const char *indicator = NULL;
 
-        while (!err) {
-            if (showingFragments || indicator == NULL) {
-                /* any iteration, except the second for a non-chunked string */
-                indicator = resolve_indicator(it->ptr, it->parser->end, flags);
+            if (type == CborTextStringType) {
+                close = open[0] = '"';
+                open[1] = '\0';
             }
 
-            err = _cbor_value_get_string_chunk(it, &ptr, &n, it);
-            if (err)
-                return err;
-            if (!ptr)
-                break;
-
-            if (!err && showingFragments)
-                err = stream(out, "%s%s", separator, open);
-            if (!err)
-                err = (type == CborByteStringType ?
-                           hexDump(stream, out, ptr, n) :
-                           utf8EscapedDump(stream, out, ptr, n));
-            if (!err && showingFragments) {
-                err = stream(out, "%c%s", close, indicator);
-                separator = ", ";
+            if (showingFragments) {
+                err = stream(out, "(_ ");
+                if (!err) err = _cbor_value_prepare_string_iteration(it);
+            } else {
+                err = stream(out, "%s", open);
             }
+
+            while (!err) {
+                if (showingFragments || indicator == NULL) {
+                    /* any iteration, except the second for a non-chunked string */
+                    indicator = resolve_indicator(it->ptr, it->parser->end, flags);
+                }
+
+                err = _cbor_value_get_string_chunk(it, &ptr, &n, it);
+                if (err) return err;
+                if (!ptr) break;
+
+                if (!err && showingFragments) err = stream(out, "%s%s", separator, open);
+                if (!err)
+                    err = (type == CborByteStringType ? hexDump(stream, out, ptr, n)
+                                                      : utf8EscapedDump(stream, out, ptr, n));
+                if (!err && showingFragments) {
+                    err = stream(out, "%c%s", close, indicator);
+                    separator = ", ";
+                }
+            }
+
+            if (!err) {
+                if (showingFragments)
+                    err = stream(out, ")");
+                else
+                    err = stream(out, "%c%s", close, indicator);
+            }
+            return err;
         }
 
-        if (!err) {
-            if (showingFragments)
-                err = stream(out, ")");
-            else
-                err = stream(out, "%c%s", close, indicator);
+        case CborTagType: {
+            CborTag tag;
+            cbor_value_get_tag(it, &tag); /* can't fail */
+            err = stream(out, "%" PRIu64 "%s(", tag, get_indicator(it, flags));
+            if (!err) err = cbor_value_advance_fixed(it);
+            if (!err && recursionsLeft)
+                err = value_to_pretty(stream, out, it, flags, recursionsLeft - 1);
+            else if (!err)
+                printRecursionLimit(stream, out);
+            if (!err) err = stream(out, ")");
+            return err;
         }
-        return err;
-    }
 
-    case CborTagType: {
-        CborTag tag;
-        cbor_value_get_tag(it, &tag);       /* can't fail */
-        err = stream(out, "%" PRIu64 "%s(", tag, get_indicator(it, flags));
-        if (!err)
-            err = cbor_value_advance_fixed(it);
-        if (!err && recursionsLeft)
-            err = value_to_pretty(stream, out, it, flags, recursionsLeft - 1);
-        else if (!err)
-            printRecursionLimit(stream, out);
-        if (!err)
-            err = stream(out, ")");
-        return err;
-    }
+        case CborSimpleType: {
+            /* simple types can't fail and can't have overlong encoding */
+            uint8_t simple_type;
+            cbor_value_get_simple_type(it, &simple_type);
+            err = stream(out, "simple(%" PRIu8 ")", simple_type);
+            break;
+        }
 
-    case CborSimpleType: {
-        /* simple types can't fail and can't have overlong encoding */
-        uint8_t simple_type;
-        cbor_value_get_simple_type(it, &simple_type);
-        err = stream(out, "simple(%" PRIu8 ")", simple_type);
-        break;
-    }
+        case CborNullType:
+            err = stream(out, "null");
+            break;
 
-    case CborNullType:
-        err = stream(out, "null");
-        break;
+        case CborUndefinedType:
+            err = stream(out, "undefined");
+            break;
 
-    case CborUndefinedType:
-        err = stream(out, "undefined");
-        break;
-
-    case CborBooleanType: {
-        bool val;
-        cbor_value_get_boolean(it, &val);       /* can't fail */
-        err = stream(out, val ? "true" : "false");
-        break;
-    }
+        case CborBooleanType: {
+            bool val;
+            cbor_value_get_boolean(it, &val); /* can't fail */
+            err = stream(out, val ? "true" : "false");
+            break;
+        }
 
 #ifndef CBOR_NO_FLOATING_POINT
-    case CborDoubleType: {
-        const char *suffix;
-        double val;
-        int r;
-        uint64_t ival;
+        case CborDoubleType: {
+            const char *suffix;
+            double val;
+            int r;
+            uint64_t ival;
 
-        if (false) {
-            float f;
-    case CborFloatType:
-            cbor_value_get_float(it, &f);
-            val = f;
-            suffix = flags & CborPrettyNumericEncodingIndicators ? "_2" : "f";
-        } else if (false) {
-            uint16_t f16;
-    case CborHalfFloatType:
+            if (false) {
+                float f;
+                case CborFloatType:
+                    cbor_value_get_float(it, &f);
+                    val = f;
+                    suffix = flags & CborPrettyNumericEncodingIndicators ? "_2" : "f";
+            } else if (false) {
+                uint16_t f16;
+                case CborHalfFloatType:
 #ifndef CBOR_NO_HALF_FLOAT_TYPE
-            cbor_value_get_half_float(it, &f16);
-            val = decode_half(f16);
-            suffix = flags & CborPrettyNumericEncodingIndicators ? "_1" : "f16";
+                    cbor_value_get_half_float(it, &f16);
+                    val = decode_half(f16);
+                    suffix = flags & CborPrettyNumericEncodingIndicators ? "_1" : "f16";
 #else
-            (void)f16;
+                    (void)f16;
+                    err = CborErrorUnsupportedType;
+                    break;
+#endif
+            } else {
+                cbor_value_get_double(it, &val);
+                suffix = "";
+            }
+
+            if ((flags & CborPrettyNumericEncodingIndicators) == 0) {
+                r = fpclassify(val);
+                if (r == FP_NAN || r == FP_INFINITE) suffix = "";
+            }
+
+            if (convertToUint64(val, &ival)) {
+                /* this double value fits in a 64-bit integer, so show it as such
+                 * (followed by a floating point suffix, to disambiguate) */
+                err = stream(out, "%s%" PRIu64 ".%s", val < 0 ? "-" : "", ival, suffix);
+            } else {
+                /* this number is definitely not a 64-bit integer */
+                err = stream(out, "%." DBL_DECIMAL_DIG_STR "g%s", val, suffix);
+            }
+            break;
+        }
+#else
+        case CborDoubleType:
+        case CborFloatType:
+        case CborHalfFloatType:
             err = CborErrorUnsupportedType;
             break;
-#endif
-        } else {
-            cbor_value_get_double(it, &val);
-            suffix = "";
-        }
-
-        if ((flags & CborPrettyNumericEncodingIndicators) == 0) {
-            r = fpclassify(val);
-            if (r == FP_NAN || r == FP_INFINITE)
-                suffix = "";
-        }
-
-        if (convertToUint64(val, &ival)) {
-            /* this double value fits in a 64-bit integer, so show it as such
-             * (followed by a floating point suffix, to disambiguate) */
-            err = stream(out, "%s%" PRIu64 ".%s", val < 0 ? "-" : "", ival, suffix);
-        } else {
-            /* this number is definitely not a 64-bit integer */
-            err = stream(out, "%." DBL_DECIMAL_DIG_STR "g%s", val, suffix);
-        }
-        break;
-    }
-#else
-    case CborDoubleType:
-    case CborFloatType:
-    case CborHalfFloatType:
-        err = CborErrorUnsupportedType;
-        break;
 #endif /* !CBOR_NO_FLOATING_POINT */
 
-    case CborInvalidType:
-        err = stream(out, "invalid");
-        if (err)
-            return err;
-        return CborErrorUnknownType;
+        case CborInvalidType:
+            err = stream(out, "invalid");
+            if (err) return err;
+            return CborErrorUnknownType;
     }
 
-    if (!err)
-        err = cbor_value_advance_fixed(it);
+    if (!err) err = cbor_value_advance_fixed(it);
     return err;
 }
 
@@ -561,7 +534,7 @@ static CborError value_to_pretty(CborStreamFunction stream, void *out, CborValue
  * The textual representation can be controlled by the \a flags parameter (see
  * \ref CborPrettyFlags for more information).
  *
- * If no error ocurred, this function advances \a value to the next element.
+ * If no error occured, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.
@@ -572,8 +545,10 @@ static CborError value_to_pretty(CborStreamFunction stream, void *out, CborValue
  *
  * \sa cbor_value_to_pretty(), cbor_value_to_json_advance()
  */
-CborError cbor_value_to_pretty_stream(CborStreamFunction streamFunction, void *token, CborValue *value, int flags)
-{
+CborError cbor_value_to_pretty_stream(CborStreamFunction streamFunction,
+                                      void *token,
+                                      CborValue *value,
+                                      int flags) {
     return value_to_pretty(streamFunction, token, value, flags, CBOR_PARSER_MAX_RECURSIONS);
 }
 

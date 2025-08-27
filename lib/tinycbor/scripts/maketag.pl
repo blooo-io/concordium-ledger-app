@@ -53,7 +53,7 @@ system @result;
 exit ($? >> 8) if $?;
 
 # Create the tag
-# Also using system so that hte user can see the output.
+# Also using system so that the user can see the output.
 system("git", "tag", "-a", "-F", $tagfile, split(' ', $ENV{GITTAGFLAGS}), "v$v");
 exit ($? >> 8) if $?;
 

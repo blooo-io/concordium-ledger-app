@@ -568,9 +568,9 @@ void addStringsData()
     QTest::newRow("_emptybytestring3*2") << raw("\x5f\x59\x00\x00\x40\xff") << "(_ h''_1, h'')";
     QTest::newRow("_emptytextstring3*2") << raw("\x7f\x79\x00\x00\x60\xff") << "(_ \"\"_1, \"\")";
     QTest::newRow("_bytestring5x2") << raw("\x5f\x43Hel\x42lo\xff") << "(_ h'48656c', h'6c6f')";
-    QTest::newRow("_textstring5x2") << raw("\x7f\x63Hel\x62lo\xff") << "(_ \"Hel\", \"lo\")";
+    QTest::newRow("_textstring5x2") << raw("\x7f\x64Hell\x62lo\xff") << "(_ \"Hell\", \"lo\")";
     QTest::newRow("_bytestring5x2*8*4") << raw("\x5f\x5b\0\0\0\0\0\0\0\3Hel\x5a\0\0\0\2lo\xff") << "(_ h'48656c'_3, h'6c6f'_2)";
-    QTest::newRow("_textstring5x2*8*4") << raw("\x7f\x7b\0\0\0\0\0\0\0\3Hel\x7a\0\0\0\2lo\xff") << "(_ \"Hel\"_3, \"lo\"_2)";
+    QTest::newRow("_textstring5x2*8*4") << raw("\x7f\x7c\0\0\0\0\0\0\0\4Hell\x7a\0\0\0\2lo\xff") << "(_ \"Hell\"_4, \"lo\"_2)";
     QTest::newRow("_bytestring5x5") << raw("\x5f\x41H\x41""e\x41l\x41l\x41o\xff") << "(_ h'48', h'65', h'6c', h'6c', h'6f')";
     QTest::newRow("_textstring5x5") << raw("\x7f\x61H\x61""e\x61l\x61l\x61o\xff") << "(_ \"H\", \"e\", \"l\", \"l\", \"o\")";
     QTest::newRow("_bytestring5x6") << raw("\x5f\x41H\x41""e\x40\x41l\x41l\x41o\xff") << "(_ h'48', h'65', h'', h'6c', h'6c', h'6f')";

@@ -26,8 +26,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static CborError cbor_fprintf(void *out, const char *fmt, ...)
-{
+static CborError cbor_fprintf(void *out, const char *fmt, ...) {
     int n;
 
     va_list list;
@@ -53,15 +52,14 @@ static CborError cbor_fprintf(void *out, const char *fmt, ...)
  * representation and writes it to the \a out stream. If an error occurs, this
  * function returns an error code similar to CborParsing.
  *
- * If no error ocurred, this function advances \a value to the next element.
+ * If no error occured, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.
  *
  * \sa cbor_value_to_pretty(), cbor_value_to_pretty_stream(), cbor_value_to_json_advance()
  */
-CborError cbor_value_to_pretty_advance(FILE *out, CborValue *value)
-{
+CborError cbor_value_to_pretty_advance(FILE *out, CborValue *value) {
     return cbor_value_to_pretty_stream(cbor_fprintf, out, value, CborPrettyDefaultFlags);
 }
 
@@ -73,15 +71,13 @@ CborError cbor_value_to_pretty_advance(FILE *out, CborValue *value)
  * The textual representation can be controlled by the \a flags parameter (see
  * CborPrettyFlags for more information).
  *
- * If no error ocurred, this function advances \a value to the next element.
+ * If no error occured, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.
  *
  * \sa cbor_value_to_pretty_stream(), cbor_value_to_pretty(), cbor_value_to_json_advance()
  */
-CborError cbor_value_to_pretty_advance_flags(FILE *out, CborValue *value, int flags)
-{
+CborError cbor_value_to_pretty_advance_flags(FILE *out, CborValue *value, int flags) {
     return cbor_value_to_pretty_stream(cbor_fprintf, out, value, flags);
 }
-

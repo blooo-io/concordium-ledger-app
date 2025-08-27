@@ -80,7 +80,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborMapType: {
                 // recursive type
                 CborValue recursed;
-                LEDGER_ASSERT(cbor_value_is_container(it), "Should be a container but isnt");
+                LEDGER_ASSERT(cbor_value_is_container(it), "Should be a container but isn't");
                 if (type == CborArrayType) {
                     temp = "[";
                 } else {
