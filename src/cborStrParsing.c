@@ -184,7 +184,7 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         // Determine content type and find matching delimiter
-        char* content_end = NULL;
+        const char* content_end = NULL;
         if (*content_start == '[') {
             content_end = find_matching_delimiter((char*)content_start, '[', ']');
         } else if (*content_start == '{') {

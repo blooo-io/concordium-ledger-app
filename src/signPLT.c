@@ -17,10 +17,6 @@ static void indent(int nestingLevel) {
     while (nestingLevel--) PRINTF("  ");
 }
 
-static void dumpbytes(const uint8_t *buf, size_t len) {
-    while (len--) PRINTF("%02X ", *buf++);
-}
-
 bool cbor_read_string_or_byte_string(CborValue *it,
                                      char *output_ptr,
                                      size_t *output_size,
@@ -68,12 +64,12 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
         PRINTF("Buffer overflow\n");
         THROW(ERROR_BUFFER_OVERFLOW);
     }
-    memcpy(dst->ptr + dst->offset, src, src_size);
+    memcpy((void *)(dst->ptr + dst->offset), src, src_size);
     dst->offset += src_size;
 }
 
 CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
-    char *temp;
+    const char *temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
         CborType type = cbor_value_get_type(it);
@@ -91,7 +87,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                     temp = "{";
                 }
                 PRINTF("%s", temp);
-                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
@@ -106,7 +102,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                     temp = "},";
                 }
                 PRINTF("%s", temp);
-                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
                 continue;
             }
             case CborIntegerType: {
@@ -138,16 +134,16 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 size_t buf_len;
                 // err = cbor_value_calculate_string_length(it, buf_len);
                 // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
-                err = cbor_read_string_or_byte_string(it, buf, &buf_len, false);
+                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, false);
                 if (err) return err;
                 char string_value[100] = {0};
                 if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
                     PRINTF("format_hex error\n");
                     THROW(0x0010);
                 }
-                add_char_array_to_buffer(out_buf, "0x", 2);
+                add_char_array_to_buffer(out_buf, (char *)"0x", 2);
                 add_char_array_to_buffer(out_buf, string_value, strlen(string_value));
-                add_char_array_to_buffer(out_buf, ",", 1);
+                add_char_array_to_buffer(out_buf, (char *)",", 1);
                 PRINTF("ByteString(%d): 0x%s\n", buf_len, string_value);
                 break;
             }
@@ -157,7 +153,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 size_t buf_len;
                 // err = cbor_value_calculate_string_length(it, buf_len);
                 // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
-                err = cbor_read_string_or_byte_string(it, buf, &buf_len, true);
+                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, true);
                 if (err) return err;
                 // null terminate the string
                 buf[buf_len] = '\0';
@@ -201,13 +197,13 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborNullType:
                 temp = "null,";
                 PRINTF("null");
-                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
                 break;
 
             case CborUndefinedType:
                 temp = "undefined,";
                 PRINTF("undefined");
-                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
                 break;
 
             case CborBooleanType: {
@@ -215,7 +211,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 cbor_value_get_boolean(it, &val);  // can't fail
                 temp = val ? "true," : "false,";
                 PRINTF(temp);
-                add_char_array_to_buffer(out_buf, temp, strlen(temp));
+                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
                 break;
             }
 
@@ -272,7 +268,7 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
     }
 
     char temp[MAX_PLT_DIPLAY_STR] = {0};
-    buffer_t out_buf = {.ptr = temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
+    buffer_t out_buf = {.ptr = (const uint8_t *)temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
     tag_list_t tag_list;  // initiate an empty tag_list_t
     err = decodeCborRecursive(&it, 0, &out_buf);
     if (err) {

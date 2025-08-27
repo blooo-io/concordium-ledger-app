@@ -304,7 +304,7 @@ void sign(uint8_t *input, uint8_t *signatureOnInput) {
     END_TRY;
 }
 
-#define l_CONST        48  // ceil((3 * ceil(log2(r))) / 16)
+#define l_CONST        48  // ceil((3 * ceil(log2(bls12_381_r))) / 16)
 #define BLS_KEY_LENGTH 32
 #define SEED_LENGTH    32
 
@@ -379,11 +379,11 @@ void blsKeygen(const uint8_t *seed, size_t seedLength, uint8_t *dst, size_t dstL
                        sk,
                        sizeof(sk));
 
-        ensureNoError(cx_math_modm_no_throw(sk, sizeof(sk), r, sizeof(r)));
+        ensureNoError(cx_math_modm_no_throw(sk, sizeof(sk), bls12_381_r, sizeof(bls12_381_r)));
     } while (cx_math_is_zero(sk, sizeof(sk)));
 
-    // Skip the first 16 bytes, because they are 0 due to calculating modulo r, which is 32 bytes
-    // (and sk has 48 bytes).
+    // Skip the first 16 bytes, because they are 0 due to calculating modulo bls12_381_r, which is
+    // 32 bytes (and sk has 48 bytes).
     memmove(dst, sk + l_CONST - BLS_KEY_LENGTH, BLS_KEY_LENGTH);
 }
 

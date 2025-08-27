@@ -52,7 +52,7 @@ def build_tx_with_payload(
     HEADER = sender
     HEADER += "000000000000000a"  # SequenceNumber
     HEADER += "0000000000000064"  # EnergyAmount
-    HEADER += len(_payload).to_bytes(4).hex()  # PayloadSize
+    HEADER += len(_payload).to_bytes(4, "big").hex()  # PayloadSize
     HEADER += "0000000063de5da7"  # Expiry
 
     transaction = bytes.fromhex(HEADER) + _payload
@@ -214,7 +214,7 @@ def navigate_until_text_and_compare(
 #     l_bytes = l_CONST.to_bytes(2, 'big')
 
 #     # The order 'r' of the BLS12-381 curve
-#     r = int("0x73eda753299d7d483339d80809a1d80553bd402fffe5bfeffff00000001", 16)
+#     bls12_381_r = int("0x73eda753299d7d483339d80809a1d80553bd402fffe5bfeffff00000001", 16)
 
 #     while True:
 #         # Hash the salt
