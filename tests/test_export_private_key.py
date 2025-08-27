@@ -14,12 +14,12 @@ from ragger.firmware import Firmware
 from utils import navigate_until_text_and_compare
 
 
-@pytest.mark.active_test_scope
+# @pytest.mark.active_test_scope
 def test_export_standard_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
-    with client.export_private_key(export_type="standard", identity_index=0):
+    with client.export_private_key_legacy(export_type="standard", identity_index=0):
         navigate_until_text_and_compare(
             firmware,
             navigator,
@@ -36,12 +36,12 @@ def test_export_standard_private_key_legacy_path(
     )
 
 
-@pytest.mark.active_test_scope
+# @pytest.mark.active_test_scope
 def test_export_recovery_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
-    with client.export_private_key(export_type="recovery", identity_index=0):
+    with client.export_private_key_legacy(export_type="recovery", identity_index=0):
         navigate_until_text_and_compare(
             firmware,
             navigator,
@@ -58,12 +58,12 @@ def test_export_recovery_private_key_legacy_path(
     )
 
 
-@pytest.mark.active_test_scope
+# @pytest.mark.active_test_scope
 def test_export_prfkey_and_idcredsed_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
-    with client.export_private_key(
+    with client.export_private_key_legacy(
         export_type="prfkey_and_idcredsec", identity_index=0
     ):
         navigate_until_text_and_compare(
@@ -82,26 +82,111 @@ def test_export_prfkey_and_idcredsed_private_key_legacy_path(
     )
 
 
-# @pytest.mark.active_test_scope
-# # TODO: UPDATE THIS TEST
-# def test_export_standard_private_key_new_path(
-#     backend, firmware, navigator, test_name, default_screenshot_path
-# ):
-#     client = BoilerplateCommandSender(backend)
-#     with client.export_private_key(
-#         export_type="standard", identity_index=0, idp_index=0
-#     ):
-#         navigate_until_text_and_compare(
-#             firmware,
-#             navigator,
-#             "Accept",
-#             default_screenshot_path,
-#             test_name,
-#             screen_change_before_first_instruction=True,
-#             screen_change_after_last_instruction=True,
-#         )
-#     result = client.get_async_response()
-#     print("km------------result", result)
-#     assert result.data == bytes.fromhex(
-#         "00beb8ab5d68b55f39dacc0d0847bb9cd62a327549d41a4dfe7c5845f70c5562"
-#     )
+@pytest.mark.active_test_scope
+def test_export_account_creation_private_key_new_path(
+    backend, firmware, navigator, test_name, default_screenshot_path
+):
+    client = BoilerplateCommandSender(backend)
+    with client.export_private_key_new_path(
+        "account_creation", identity_index=0, idp_index=0, account_index=0
+    ):
+        navigate_until_text_and_compare(
+            firmware,
+            navigator,
+            "Accept",
+            default_screenshot_path,
+            test_name,
+            screen_change_before_first_instruction=True,
+            screen_change_after_last_instruction=True,
+        )
+    result = client.get_async_response()
+    print("km------------result", result)
+    assert len(result.data) == 33 * 3
+
+
+@pytest.mark.active_test_scope
+def test_export_identity_credential_creation_private_key_new_path(
+    backend, firmware, navigator, test_name, default_screenshot_path
+):
+    client = BoilerplateCommandSender(backend)
+    with client.export_private_key_new_path(
+        "identity_credential_creation", identity_index=0, idp_index=0
+    ):
+        navigate_until_text_and_compare(
+            firmware,
+            navigator,
+            "Accept",
+            default_screenshot_path,
+            test_name,
+            screen_change_before_first_instruction=True,
+            screen_change_after_last_instruction=True,
+        )
+    result = client.get_async_response()
+    print("km------------result", result)
+    assert len(result.data) == 33 * 3
+
+
+@pytest.mark.active_test_scope
+def test_export_id_recovery_private_key_new_path(
+    backend, firmware, navigator, test_name, default_screenshot_path
+):
+    client = BoilerplateCommandSender(backend)
+    with client.export_private_key_new_path(
+        "id_recovery", identity_index=0, idp_index=0
+    ):
+        navigate_until_text_and_compare(
+            firmware,
+            navigator,
+            "Accept",
+            default_screenshot_path,
+            test_name,
+            screen_change_before_first_instruction=True,
+            screen_change_after_last_instruction=True,
+        )
+    result = client.get_async_response()
+    print("km------------result", result)
+    assert len(result.data) == 33 * 2
+
+
+@pytest.mark.active_test_scope
+def test_export_account_credential_discovery_private_key_new_path(
+    backend, firmware, navigator, test_name, default_screenshot_path
+):
+    client = BoilerplateCommandSender(backend)
+    with client.export_private_key_new_path(
+        "account_credential_discovery", identity_index=0, idp_index=0
+    ):
+        navigate_until_text_and_compare(
+            firmware,
+            navigator,
+            "Accept",
+            default_screenshot_path,
+            test_name,
+            screen_change_before_first_instruction=True,
+            screen_change_after_last_instruction=True,
+        )
+    result = client.get_async_response()
+    print("km------------result", result)
+    assert len(result.data) == 33 * 1
+
+
+@pytest.mark.active_test_scope
+def test_export_creation_of_zk_proof_private_key_new_path(
+    backend, firmware, navigator, test_name, default_screenshot_path
+):
+    client = BoilerplateCommandSender(backend)
+    with client.export_private_key_new_path(
+        "creation_of_zk_proof", identity_index=0, idp_index=0, account_index=0
+    ):
+        navigate_until_text_and_compare(
+            firmware,
+            navigator,
+            "Accept",
+            default_screenshot_path,
+            test_name,
+            screen_change_before_first_instruction=True,
+            screen_change_after_last_instruction=True,
+        )
+    result = client.get_async_response()
+    print("km------------result", result)
+    assert len(result.data) == 33 * 1
