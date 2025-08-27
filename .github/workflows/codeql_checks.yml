@@ -19,8 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sdk:
-          ["$NANOS_SDK", "$NANOSP_SDK", "$NANOX_SDK", "$FLEX_SDK", "$STAX_SDK"]
+        sdk: ["$NANOSP_SDK", "$NANOX_SDK", "$FLEX_SDK", "$STAX_SDK"]
         # 'cpp' covers C and C++
         language: ["cpp"]
     runs-on: ubuntu-latest
