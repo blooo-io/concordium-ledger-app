@@ -463,27 +463,50 @@ bool parse_tag_4(tag_info_t* tag) {
     // Negative exponent - need to format with decimal places
     int64_t abs_exponent = -exponent;
 
-    if (abs_exponent > 18) {  // Prevent too many decimal places
-        PRINTF("Warning: exponent %lld is too large\n", abs_exponent);
+    // if (abs_exponent > 18) {  // Prevent too many decimal places
+    //     PRINTF("Warning: exponent %lld is too large\n", abs_exponent);
+    //     return false;
+    // }
+
+    // Manual formatting of mantissa with abs_exponent decimals, using tag->parsedContent as output
+    // 1. Convert mantissa to string
+    char mantissa_str[258];
+    if (!format_u64(mantissa_str, sizeof(mantissa_str), mantissa)) {
+        PRINTF("Failed to format mantissa\n");
         return false;
     }
+    size_t mantissa_len = strlen(mantissa_str);
 
-    // Split mantissa into integer and fractional parts
-    uint64_t divisor = 1;
-    for (uint64_t i = 0; i < abs_exponent; i++) {
-        divisor *= 10;
+    // 2. If abs_exponent is 0, just copy mantissa_str
+    if (abs_exponent == 0) {
+        snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "%s", mantissa_str);
+    } else if (mantissa_len > (size_t)abs_exponent) {
+        // Place decimal point within the string
+        size_t int_len = mantissa_len - abs_exponent;
+        if (int_len + 1 + abs_exponent + 1 > MAX_TAG_PARSED_CONTENT_SIZE) {
+            PRINTF("Buffer too small for formatted decimal\n");
+            return false;
+        }
+        memcpy(tag->parsedContent, mantissa_str, int_len);
+        tag->parsedContent[int_len] = '.';
+        memcpy(tag->parsedContent + int_len + 1, mantissa_str + int_len, abs_exponent);
+        tag->parsedContent[int_len + 1 + abs_exponent] = '\0';
+    } else {
+        // Number is less than 1, need leading zeros after decimal
+        size_t zeros = abs_exponent - mantissa_len;
+        if (2 + zeros + mantissa_len + 1 > MAX_TAG_PARSED_CONTENT_SIZE) {
+            PRINTF("Buffer too small for formatted decimal\n");
+            return false;
+        }
+        char* out = tag->parsedContent;
+        *out++ = '0';
+        *out++ = '.';
+        for (size_t i = 0; i < zeros; i++) {
+            *out++ = '0';
+        }
+        memcpy(out, mantissa_str, mantissa_len);
+        out[mantissa_len] = '\0';
     }
-
-    uint64_t integer_part = mantissa / divisor;
-    uint64_t fractional_part = mantissa % divisor;
-
-    // Format the result and save to parsedContent
-    char integer_str[257];
-    char fractional_str[257];
-    format_u64(integer_str, sizeof(integer_str), integer_part);
-    format_u64(fractional_str, sizeof(fractional_str), fractional_part);
-
-    snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "%s.%s", integer_str, fractional_str);
 
     PRINTF("Parsed decimal: %s\n", tag->parsedContent);
     return true;
