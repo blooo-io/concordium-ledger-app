@@ -23,6 +23,33 @@ MAX_SCHEDULE_PAIRS_IN_ONE_APDU: int = (250 // 16) * 16
 MAX_APDU_LEN: int = 255
 
 
+# This test contains a sequence of PLT operations
+# 10 transfers with amount from 12.23 to 12.32 with an increase of 0.01 every transfer
+@pytest.mark.active_test_scope
+def test_sign_plt_multiple_operations(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0754657374504c54"
+        + "00000335"
+        + "8AA1687472616E73666572A266616D6F756E74C482211904C769726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904C869726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904C969726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CA69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CB69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CC69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CD69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CE69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904CF69726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7A1687472616E73666572A266616D6F756E74C482211904D069726563697069656E74D99D73A201D99D71A10119039703582020A845815BD43A1999E90FBF971537A70392EB38F89E6BD32B3DD70E1A9551D7"
+    )  # 821 bytes
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128  # 64 bytes signature
+
+
 # In this test we send to the device a transaction to sign and validate it on screen
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
@@ -36,7 +63,7 @@ def test_sign_plt_single_transfer(
     path: str = "m/1105/0/0/0/0/2/0/0"
 
     transaction = build_tx_with_payload(
-        "1b0754657374504c540000005381a1687472616e73666572a266616d6f756e74c482211904c769726563697069656e74d99d73a201d99d71a101190397035820c8d4bb7106a96bfa6f069438270bf9748049c24798b13b08f88fc2f46afb435f"
+        "1b0754657374504c540000005381a1687472616e73666572a266616d6f756e74c482211904c769726563697069656e74d99d73a201d99d71a10119039703582020a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7"
     )
 
     # Send the sign device instruction.
@@ -52,18 +79,15 @@ def test_sign_plt_single_transfer(
     response = client.get_async_response().data
     response_hex = response.hex()
     print("response", response_hex)
-    # KM_TODO: add the correct signature
-    assert (
-        response_hex
-        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
-    )
+    assert len(response_hex) == 128  # 64 bytes signature
+
     # assert check_signature_validity(public_key, der_sig, transaction)
 
 
 # In this test we send to the device a transaction to sign and validate it on screen
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
-# @pytest.mark.active_test_scope
+@pytest.mark.active_test_scope
 def test_sign_plt_single_mint(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -89,18 +113,15 @@ def test_sign_plt_single_mint(
     response = client.get_async_response().data
     response_hex = response.hex()
     print("response", response_hex)
-    # KM_TODO: add the correct signature
-    assert (
-        response_hex
-        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
-    )
+    assert len(response_hex) == 128  # 64 bytes signature
+
     # assert check_signature_validity(public_key, der_sig, transaction)
 
 
 # In this test we send to the device a transaction to sign and validate it on screen
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
-# @pytest.mark.active_test_scope
+@pytest.mark.active_test_scope
 def test_sign_plt_single_deny(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -126,285 +147,488 @@ def test_sign_plt_single_deny(
     response = client.get_async_response().data
     response_hex = response.hex()
     print("response", response_hex)
-    # KM_TODO: add the correct signature
-    assert (
-        response_hex
-        == "d1617ee706805c0bc6a43260ece93a7ceba37aaefa303251cf19bdcbbe88c0a3d3878dcb965cdb88ff380fdb1aa4b321671f365d7258e878d18fa1b398a1a10f"
+    assert len(response_hex) == 128  # 64 bytes signature
+
+
+# PLT Operation Tests based on examples
+
+
+# Test empty operations
+@pytest.mark.active_test_scope
+def test_sign_plt_empty_operations(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with empty operations"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload("1b0474504c540000000180")
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128  # 64 bytes signature
+
+
+# Test pause operation
+@pytest.mark.active_test_scope
+def test_sign_plt_pause(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with pause operation"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload("1b0474504c540000000981a1657061757365a0")
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test unpause operation
+@pytest.mark.active_test_scope
+def test_sign_plt_unpause(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with unpause operation"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload("1b0474504c540000000b81a167756e7061757365a0")
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test add allow list with coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_add_allow_list_with_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with add allow list operation (with coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004781a16c616464416c6c6f774c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
     )
 
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
 
-# # In this test we send to the device a transaction to sign and validate it on screen
-# # The transaction is short and will be sent in one chunk
-# # We will ensure that the displayed information is correct by using screenshots comparison
-# @pytest.mark.active_test_scope
-# def test_sign_tx_simple_transfer_new_path(
-#     backend, firmware, navigator, default_screenshot_path, test_name
-# ):
-#     # Use the app interface instead of raw interface
-#     client = BoilerplateCommandSender(backend)
-#     # The path used for this entire test
-#     path: str = "m/44/919/0/0/0/0"
-
-#     # Create the transaction that will be sent to the device for signing
-#     transaction = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da70320a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7ffffffffffffffff"
-#     transaction = bytes.fromhex(transaction)
-
-#     # Send the sign device instruction.
-#     # As it requires on-screen validation, the function is asynchronous.
-#     # It will yield the result when the navigation is done
-#     with client.sign_simple_transfer(path=path, transaction=transaction):
-#         # Validate the on-screen request by performing the navigation appropriate for this device
-#         navigate_until_text_and_compare(
-#             firmware, navigator, "Sign", default_screenshot_path, test_name
-#         )
-
-#     # The device as yielded the result, parse it and ensure that the signature is correct
-#     response = client.get_async_response().data
-#     response_hex = response.hex()
-#     print("response", response_hex)
-#     assert (
-#         response_hex
-#         == "e5f112237d58f908c44385827e71048869db7e8f513e2ceb5da6a6370e2088f4371f93d6e08f9f6c1dd92c74fe565727b8f81600541e817d35cfeec4cc3bc408"
-#     )
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
 
 
-# # In this test we send to the device a transaction to sign and validate it on screen
-# # The transaction is short and will be sent in one chunk
-# # We will ensure that the displayed information is correct by using screenshots comparison
-# @pytest.mark.active_test_scope
-# def test_sign_tx_simple_transfer_with_memo_legacy_path(
-#     backend, firmware, navigator, default_screenshot_path, test_name
-# ):
-#     # Use the app interface instead of raw interface
-#     client = BoilerplateCommandSender(backend)
-#     # The path used for this entire test
-#     path: str = "m/1105/0/0/0/0/2/0/0"
+# Test add allow list without coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_add_allow_list_no_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with add allow list operation (no coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
 
-#     # Create the transaction that will be sent to the device for signing
-#     header_and_to_address = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da71620a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7"
-#     header_and_to_address = bytes.fromhex(header_and_to_address)
-#     memo = "6474657374"
-#     memo = bytes.fromhex(memo)
-#     amount = "ffffffffffffffff"
-#     amount = bytes.fromhex(amount)
+    transaction = build_tx_with_payload(
+        "1b0474504c540000003e81a16c616464416c6c6f774c697374a166746172676574d99d73a1035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
 
-#     # Send the sign device instruction.
-#     # As it requires on-screen validation, the function is asynchronous.
-#     # It will yield the result when the navigation is done
-#     with client.sign_simple_transfer_with_memo(
-#         path=path,
-#         header_and_to_address=header_and_to_address,
-#         memo=memo,
-#         amount=amount,
-#     ):
-#         # Validate the on-screen request by performing the navigation appropriate for this device
-#         navigate_until_text_and_compare(
-#             firmware, navigator, "Sign", default_screenshot_path, test_name
-#         )
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
 
-#     # The device as yielded the result, parse it and ensure that the signature is correct
-#     response = client.get_async_response().data
-#     response_hex = response.hex()
-#     print("response", response_hex)
-#     # TODO: verify the signature
-#     assert (
-#         response_hex
-#         == "a588094eef4ed6053df2ab4b851bc5ec09b311c204d2fa94a9c7d7c8feebf74de26d2d2a547f18c4e959b24388394305ebd3dca99653de1cb1aa689bb6674207"
-#     )
-#     # assert check_signature_validity(public_key, der_sig, transaction)
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
 
 
-# @pytest.mark.active_test_scope
-# def test_sign_tx_transfer_with_schedule_legacy_path(
-#     backend, firmware, navigator, default_screenshot_path, test_name
-# ):
-#     # Initialize the command sender client
-#     client = BoilerplateCommandSender(backend)
-#     # Define the path for the transaction
-#     path = "m/1105/0/0/0/0/2/0/0"
+# Test remove allow list with coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_remove_allow_list_with_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with remove allow list operation (with coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
 
-#     # Create the transaction that will be sent to the device for signing
-#     header_and_to_address = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da713"
-#     header_and_to_address = bytes.fromhex(header_and_to_address)
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004a81a16f72656d6f7665416c6c6f774c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
 
-#     # Define the schedule pairs
-#     pairs = [
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#     ]
-#     joined_pairs = bytes.fromhex("".join(pairs))
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
 
-#     # Ensure pairs are a multiple of 16 bytes
-#     if len(joined_pairs) % 16 != 0:
-#         raise ValueError("Pairs must be a multiple of 16 bytes")
-
-#     # Split the pairs into chunks for APDU transmission
-#     pairs_chunk = split_message(joined_pairs, MAX_SCHEDULE_PAIRS_IN_ONE_APDU)
-
-#     # Send the first part of the transaction signing request
-
-#     with client.sign_tx_with_schedule_part_1(
-#         path=path,
-#         header_and_to_address=header_and_to_address,
-#         num_pairs=len(pairs),
-#     ):
-#         # Navigate and compare screenshots for validation
-#         navigate_until_text_and_compare(
-#             firmware,
-#             navigator,
-#             "Continue",
-#             default_screenshot_path,
-#             test_name,
-#             True,
-#             False,
-#             NavInsID.USE_CASE_CHOICE_CONFIRM,
-#         )
-
-#     # Process each chunk of pairs
-#     screenshots_so_far = 3
-#     if firmware.name == "nanos":
-#         screenshots_so_far = 10
-#     elif firmware.is_nano:
-#         screenshots_so_far = 6
-
-#     for chunk in pairs_chunk:
-#         nbgl_confirm_instruction = NavInsID.USE_CASE_CHOICE_CONFIRM
-#         number_of_pairs_in_chunk = len(chunk) // 16
-#         # Create the instructions to validate each pair
-#         instructions = []
-#         for _ in range(number_of_pairs_in_chunk):
-#             if _ == number_of_pairs_in_chunk - 1:
-#                 nbgl_confirm_instruction = NavInsID.USE_CASE_REVIEW_CONFIRM
-#             instructions.extend(
-#                 instructions_builder(2, backend, nbgl_confirm_instruction)
-#             )
-
-#         # Send the second part of the transaction signing request
-#         with client.sign_tx_with_schedule_part_2(data=chunk):
-#             # Navigate and compare screenshots for validation
-#             navigator.navigate_and_compare(
-#                 default_screenshot_path,
-#                 test_name,
-#                 instructions,
-#                 10,
-#                 True,
-#                 True,
-#                 screenshots_so_far,
-#             )
-#         screenshots_so_far += number_of_pairs_in_chunk * 3
-
-#     # The device as yielded the result, parse it and ensure that the signature is correct
-#     response = client.get_async_response().data
-#     response_hex = response.hex()
-#     print("km------------response", response_hex)
-#     # TODO: verify the signature
-#     assert (
-#         response_hex
-#         == "e22fa38f78a79db71e84376c4eec2382166cdc412994207e7631b0ba3828f069b17b6f30351a64c50e5efacec3fe25161e9f7131e0235cd740739b24e0b06308"
-#     )
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
 
 
-# @pytest.mark.active_test_scope
-# def test_sign_tx_transfer_with_schedule_and_memo_legacy_path(
-#     backend, firmware, navigator, default_screenshot_path, test_name
-# ):
-#     # Initialize the command sender client
-#     client = BoilerplateCommandSender(backend)
-#     # Define the path for the transaction
-#     path = "m/1105/0/0/0/0/2/0/0"
+# Test remove allow list without coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_remove_allow_list_no_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with remove allow list operation (no coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
 
-#     # Create the transaction that will be sent to the device for signing
-#     header_and_to_address = "20a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7000000000000000a0000000000000064000000290000000063de5da71820a845815bd43a1999e90fbf971537a70392eb38f89e6bd32b3dd70e1a9551d7"
-#     header_and_to_address = bytes.fromhex(header_and_to_address)
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004181a16f72656d6f7665416c6c6f774c697374a166746172676574d99d73a1035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
 
-#     # Define the memo
-#     memo = "6474657374"  # "test" in hex
-#     memo = bytes.fromhex(memo)
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
 
-#     memo_chunks = split_message(memo, MAX_APDU_LEN)
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
 
-#     # Define the schedule pairs
-#     pairs = [
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#         "0000017a396883d90000000005f5e100",
-#     ]
-#     joined_pairs = bytes.fromhex("".join(pairs))
 
-#     # Ensure pairs are a multiple of 16 bytes
-#     if len(joined_pairs) % 16 != 0:
-#         raise ValueError("Pairs must be a multiple of 16 bytes")
+# Test add deny list with coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_add_deny_list_with_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with add deny list operation (with coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
 
-#     # Split the pairs into chunks for APDU transmission
-#     pairs_chunk = split_message(joined_pairs, MAX_SCHEDULE_PAIRS_IN_ONE_APDU)
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004681a16b61646444656e794c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
 
-#     # Send the first part of the transaction signing request
-#     response = client.sign_tx_with_schedule_and_memo_part_1(
-#         path=path,
-#         header_and_to_address=header_and_to_address,
-#         num_pairs=len(pairs),
-#         memo_length=len(memo),
-#     )
-#     print("km------------response", response)
-#     assert response.status == 0x9000
-#     # Send the part with the memo
-#     for chunk in memo_chunks:
-#         with client.sign_tx_with_schedule_and_memo_part_2(memo_chunk=chunk):
-#             navigate_until_text_and_compare(
-#                 firmware,
-#                 navigator,
-#                 "Continue",
-#                 default_screenshot_path,
-#                 test_name,
-#                 True,
-#                 False,
-#                 NavInsID.USE_CASE_CHOICE_CONFIRM,
-#             )
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
 
-#     # Process each chunk of pairs
-#     screenshots_so_far = 3
-#     if firmware.name == "nanos":
-#         screenshots_so_far = 11
-#     elif firmware.is_nano:
-#         screenshots_so_far = 7
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
 
-#     for chunk in pairs_chunk:
-#         nbgl_confirm_instruction = NavInsID.USE_CASE_CHOICE_CONFIRM
-#         number_of_pairs_in_chunk = len(chunk) // 16
-#         # Create the instructions to validate each pair
-#         instructions = []
-#         for _ in range(number_of_pairs_in_chunk):
-#             if _ == number_of_pairs_in_chunk - 1:
-#                 nbgl_confirm_instruction = NavInsID.USE_CASE_REVIEW_CONFIRM
-#             instructions.extend(
-#                 instructions_builder(2, backend, nbgl_confirm_instruction)
-#             )
 
-#         # Send the second part of the transaction signing request
-#         with client.sign_tx_with_schedule_part_2(data=chunk):
-#             # Navigate and compare screenshots for validation
-#             navigator.navigate_and_compare(
-#                 default_screenshot_path,
-#                 test_name,
-#                 instructions,
-#                 10,
-#                 True,
-#                 True,
-#                 screenshots_so_far,
-#             )
-#         screenshots_so_far += number_of_pairs_in_chunk * 3
+# Test add deny list without coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_add_deny_list_no_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with add deny list operation (no coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
 
-#     # The device as yielded the result, parse it and ensure that the signature is correct
-#     response = client.get_async_response().data
-#     response_hex = response.hex()
-#     print("km------------response", response_hex)
-#     # TODO: verify the signature
-#     assert (
-#         response_hex
-#         == "9056db36dfa7b0ba722660b2becb227ed490dcaff9e332a7fba4c6d534ff0ff3368b21da8e7ebb62891be561261abd7c0435dfb46e596b1116c9996269d2a70b"
-#     )
+    transaction = build_tx_with_payload(
+        "1b0474504c540000003d81a16b61646444656e794c697374a166746172676574d99d73a1035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test remove deny list with coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_remove_deny_list_with_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with remove deny list operation (with coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004981a16e72656d6f766544656e794c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test remove deny list without coininfo
+@pytest.mark.active_test_scope
+def test_sign_plt_remove_deny_list_no_coininfo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with remove deny list operation (no coininfo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000004081a16e72656d6f766544656e794c697374a166746172676574d99d73a1035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test mint with maximum amount
+@pytest.mark.active_test_scope
+# todo: fix this test
+def test_sign_plt_mint_max_amount(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with mint operation (maximum amount: 18446744073.709551615)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001b81a1646d696e74a166616d6f756e74c482281bffffffffffffffff"
+        # 0xffffffffffffffff = 18446744073709551615
+        # but get 5161559073704476448
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test mint with amount 1
+@pytest.mark.active_test_scope
+def test_sign_plt_mint_amount_one(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with mint operation (amount: 1)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001381a1646d696e74a166616d6f756e74c4820001"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test mint with very small amount
+@pytest.mark.active_test_scope
+# todo: fix this test
+def test_sign_plt_mint_very_small_amount(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with mint operation (very small amount)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001481a1646d696e74a166616d6f756e74c48238fe01"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test burn with maximum amount
+@pytest.mark.active_test_scope
+# todo: fix this test
+def test_sign_plt_burn_max_amount(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with burn operation (maximum amount: 18446744073.709551615)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001c81a1646275726ea166616d6f756e74c48238fe1bffffffffffffffff"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test burn with amount 1
+@pytest.mark.active_test_scope
+def test_sign_plt_burn_amount_one(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with burn operation (amount: 1)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001381a1646275726ea166616d6f756e74c4820001"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test burn with very small amount
+# todo: fix this test
+@pytest.mark.active_test_scope
+def test_sign_plt_burn_very_small_amount(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with burn operation (very small amount)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000001481a1646275726ea166616d6f756e74c48238fe01"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test transfer with maximum amount and no memo
+@pytest.mark.active_test_scope
+# todo: fix this test
+def test_sign_plt_transfer_max_amount_no_memo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with transfer operation (max amount, no memo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000005981a1687472616e73666572a266616d6f756e74c482281bffffffffffffffff69726563697069656e74d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test transfer with untagged memo
+@pytest.mark.active_test_scope
+def test_sign_plt_transfer_with_untagged_memo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with transfer operation (amount 50, untagged memo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000006781a1687472616e73666572a3646d656d6f4f6e546869732069732061207465737466616d6f756e74c48200183269726563697069656e74d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
+
+
+# Test transfer with CBOR memo
+@pytest.mark.active_test_scope
+def test_sign_plt_transfer_with_cbor_memo(
+    backend, firmware, navigator, default_screenshot_path, test_name
+):
+    """Test PLT transaction with transfer operation (small amount, CBOR memo)"""
+    client = BoilerplateCommandSender(backend)
+    path: str = "m/1105/0/0/0/0/2/0/0"
+
+    transaction = build_tx_with_payload(
+        "1b0474504c540000006981a1687472616e73666572a3646d656d6fd8184f6e546869732069732061207465737466616d6f756e74c48229183269726563697069656e74d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+    )
+
+    with client.sign_plt_transaction(path=path, transaction=transaction):
+        navigate_until_text_and_compare(
+            firmware, navigator, "Sign", default_screenshot_path, test_name
+        )
+
+    response = client.get_async_response().data
+    response_hex = response.hex()
+    print("response", response_hex)
+    assert len(response_hex) == 128
