@@ -534,7 +534,7 @@ static CborError value_to_pretty(CborStreamFunction stream,
  * The textual representation can be controlled by the \a flags parameter (see
  * \ref CborPrettyFlags for more information).
  *
- * If no error occured, this function advances \a value to the next element.
+ * If no error occurred, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.

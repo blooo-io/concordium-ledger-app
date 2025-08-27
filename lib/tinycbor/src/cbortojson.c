@@ -677,7 +677,7 @@ static CborError value_to_json(FILE *out,
  * code similar to CborParsing. The \a flags parameter indicates one or more of
  * the flags from CborToJsonFlags that control the conversion.
  *
- * If no error occured, this function advances \a value to the next element.
+ * If no error occurred, this function advances \a value to the next element.
  *
  * \sa cbor_value_to_json(), cbor_value_to_pretty_advance()
  */

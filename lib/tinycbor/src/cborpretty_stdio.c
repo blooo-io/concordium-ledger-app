@@ -52,7 +52,7 @@ static CborError cbor_fprintf(void *out, const char *fmt, ...) {
  * representation and writes it to the \a out stream. If an error occurs, this
  * function returns an error code similar to CborParsing.
  *
- * If no error occured, this function advances \a value to the next element.
+ * If no error occurred, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.
@@ -71,7 +71,7 @@ CborError cbor_value_to_pretty_advance(FILE *out, CborValue *value) {
  * The textual representation can be controlled by the \a flags parameter (see
  * CborPrettyFlags for more information).
  *
- * If no error occured, this function advances \a value to the next element.
+ * If no error occurred, this function advances \a value to the next element.
  * Often, concatenating the text representation of multiple elements can be
  * done by appending a comma to the output stream in between calls to this
  * function.
