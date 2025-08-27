@@ -113,8 +113,6 @@ int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
         THROW(ERROR_FAILED_CX_OPERATION);
     }
     int headerLength = hashAccountTransactionHeaderAndKind(cdata, remainingDataLength, kind);
-    cdata += headerLength;
-    remainingDataLength -= headerLength;
 
     return keyPathLength + headerLength;
 }
