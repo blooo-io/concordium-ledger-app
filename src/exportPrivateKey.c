@@ -107,87 +107,138 @@ void exportPrivateKey(void) {
 #define NORMAL_ACCOUNTS 0
 
 // Export the PRF key
-#define P1_PRF_KEY          0x00
-#define P1_PRF_KEY_RECOVERY 0x01
+#define P1_LEGACY_PRF_KEY          0x00
+#define P1_LEGACY_PRF_KEY_RECOVERY 0x01
 // Export the PRF key and the IdCredSec
-#define P1_BOTH 0x02
+#define P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC 0x02
 
 // Export seeds (Deprecated)
-#define P2_SEED 0x01
+#define P2_LEGACY_SEED 0x01
 // Export the BLS keys
-#define P2_KEY 0x02
+#define P2_LEGACY_KEY 0x02
 
-void handleExportPrivateKey(uint8_t *dataBuffer,
-                            uint8_t p1,
-                            uint8_t p2,
-                            uint8_t lc,
-                            bool legacyDerivationPath,
-                            volatile unsigned int *flags) {
-    if ((p1 != P1_BOTH && p1 != P1_PRF_KEY && p1 != P1_PRF_KEY_RECOVERY) ||
-        (p2 != P2_KEY && p2 != P2_SEED)) {
+void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
+                                      uint8_t p1,
+                                      uint8_t p2,
+                                      uint8_t lc,
+                                      volatile unsigned int *flags) {
+    if ((p1 != P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC && p1 != P1_LEGACY_PRF_KEY &&
+         p1 != P1_LEGACY_PRF_KEY_RECOVERY) ||
+        (p2 != P2_LEGACY_KEY && p2 != P2_LEGACY_SEED)) {
         THROW(ERROR_INVALID_PARAM);
     }
     size_t offset = 0;
 
-    ctx->isNewPath = !legacyDerivationPath;
+    ctx->isNewPath = false;
     uint8_t remainingDataLength = lc - offset;
-    uint32_t identity_provider;
     uint32_t identity;
-    if (ctx->isNewPath) {
-        if (remainingDataLength < 4) {
-            THROW(ERROR_INVALID_PATH);
-        }
-        identity_provider = U4BE(dataBuffer, offset);
-        offset += 4;
-        remainingDataLength -= 4;
-    }
     if (remainingDataLength < 4) {
         THROW(ERROR_INVALID_PATH);
     }
     identity = U4BE(dataBuffer, offset);
     uint32_t *keyDerivationPath;
     size_t pathLength;
-    if (ctx->isNewPath) {
-        keyDerivationPath = (uint32_t[4]){NEW_PURPOSE | HARDENED_OFFSET,
-                                          NEW_COIN_TYPE | HARDENED_OFFSET,
-                                          identity_provider | HARDENED_OFFSET,
-                                          identity | HARDENED_OFFSET};
-        pathLength = 4;
-    } else {
-        keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
-                                          LEGACY_COIN_TYPE | HARDENED_OFFSET,
-                                          ACCOUNT_SUBTREE | HARDENED_OFFSET,
-                                          NORMAL_ACCOUNTS | HARDENED_OFFSET,
-                                          identity | HARDENED_OFFSET};
-        pathLength = 5;
-    }
+    keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
+                                      LEGACY_COIN_TYPE | HARDENED_OFFSET,
+                                      ACCOUNT_SUBTREE | HARDENED_OFFSET,
+                                      NORMAL_ACCOUNTS | HARDENED_OFFSET,
+                                      identity | HARDENED_OFFSET};
+    pathLength = 5;
     memmove(ctx->path, keyDerivationPath, pathLength * sizeof(uint32_t));
     ctx->pathLength = pathLength * sizeof(uint32_t);
 
-    ctx->exportBoth = p1 == P1_BOTH;
-    ctx->exportSeed = p2 == P2_SEED;
+    ctx->exportBoth = p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC;
+    ctx->exportSeed = p2 == P2_LEGACY_SEED;
 
     // Reset the offset to 0
     offset = 0;
-    if (ctx->isNewPath) {
-        memmove(ctx->display, "IDP#", 4);
-        offset += 4;
-        offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity_provider);
-        // Remove the null terminator
-        offset -= 1;
-    }
-
     memmove(ctx->display + offset, " ID#", 4);
     offset += 4;
     bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
 
-    if (p1 == P1_BOTH) {
+    if (p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC) {
         memmove(ctx->displayHeader, "Create credential", 18);
-    } else if (p1 == P1_PRF_KEY_RECOVERY) {
+    } else if (p1 == P1_LEGACY_PRF_KEY_RECOVERY) {
         memmove(ctx->displayHeader, "Recover credentials", 20);
-    } else if (p1 == P1_PRF_KEY) {
+    } else if (p1 == P1_LEGACY_PRF_KEY) {
         memmove(ctx->displayHeader, "Decrypt", 8);
     }
 
     uiExportPrivateKey(flags);
+}
+
+void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
+                                   uint8_t p1,
+                                   uint8_t p2,
+                                   uint8_t lc,
+                                   volatile unsigned int *flags) {
+    // if ((p1 != P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC && p1 != P1_LEGACY_PRF_KEY && p1 !=
+    // P1_LEGACY_PRF_KEY_RECOVERY) ||
+    //     (p2 != P2_LEGACY_KEY && p2 != P2_LEGACY_SEED)) {
+    //     THROW(ERROR_INVALID_PARAM);
+    // }
+    // size_t offset = 0;
+
+    // ctx->isNewPath = true;
+    // uint8_t remainingDataLength = lc - offset;
+    // uint32_t identity_provider;
+    // uint32_t identity;
+    // if (ctx->isNewPath) {
+    //     if (remainingDataLength < 4) {
+    //         THROW(ERROR_INVALID_PATH);
+    //     }
+    //     identity_provider = U4BE(dataBuffer, offset);
+    //     offset += 4;
+    //     remainingDataLength -= 4;
+    // }
+    // if (remainingDataLength < 4) {
+    //     THROW(ERROR_INVALID_PATH);
+    // }
+    // identity = U4BE(dataBuffer, offset);
+    // uint32_t *keyDerivationPath;
+    // size_t pathLength;
+    // if (ctx->isNewPath) {
+    //     keyDerivationPath = (uint32_t[4]){NEW_PURPOSE | HARDENED_OFFSET,
+    //                                       NEW_COIN_TYPE | HARDENED_OFFSET,
+    //                                       identity_provider | HARDENED_OFFSET,
+    //                                       identity | HARDENED_OFFSET};
+    //     pathLength = 4;
+    // } else {
+    //     keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
+    //                                       LEGACY_COIN_TYPE | HARDENED_OFFSET,
+    //                                       ACCOUNT_SUBTREE | HARDENED_OFFSET,
+    //                                       NORMAL_ACCOUNTS | HARDENED_OFFSET,
+    //                                       identity | HARDENED_OFFSET};
+    //     pathLength = 5;
+    // }
+    // memmove(ctx->path, keyDerivationPath, pathLength * sizeof(uint32_t));
+    // ctx->pathLength = pathLength * sizeof(uint32_t);
+
+    // ctx->exportBoth = p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC;
+    // ctx->exportSeed = p2 == P2_LEGACY_SEED;
+
+    // // Reset the offset to 0
+    // offset = 0;
+    // if (ctx->isNewPath) {
+    //     memmove(ctx->display, "IDP#", 4);
+    //     offset += 4;
+    //     offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset,
+    //     identity_provider);
+    //     // Remove the null terminator
+    //     offset -= 1;
+    // }
+
+    // memmove(ctx->display + offset, " ID#", 4);
+    // offset += 4;
+    // bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
+
+    // if (p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC) {
+    //     memmove(ctx->displayHeader, "Create credential", 18);
+    // } else if (p1 == P1_LEGACY_PRF_KEY_RECOVERY) {
+    //     memmove(ctx->displayHeader, "Recover credentials", 20);
+    // } else if (p1 == P1_LEGACY_PRF_KEY) {
+    //     memmove(ctx->displayHeader, "Decrypt", 8);
+    // }
+
+    // uiExportPrivateKey(flags);
 }

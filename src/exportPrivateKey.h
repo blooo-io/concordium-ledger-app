@@ -8,19 +8,24 @@
  * then the BLS keys are exported. 0x00 is not used to ensure that old clients fail when calling
  * this functionality.
  */
-void handleExportPrivateKey(uint8_t *dataBuffer,
-                            uint8_t p1,
-                            uint8_t p2,
-                            uint8_t lc,
-                            bool legacyDerivationPath,
-                            volatile unsigned int *flags);
+void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
+                                      uint8_t p1,
+                                      uint8_t p2,
+                                      uint8_t lc,
+                                      volatile unsigned int *flags);
+
+void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
+                                   uint8_t p1,
+                                   uint8_t p2,
+                                   uint8_t lc,
+                                   volatile unsigned int *flags);
 
 typedef struct {
     uint8_t displayHeader[20];
     uint8_t display[22];
     bool exportBoth;
     bool exportSeed;
-    uint32_t path[6];
+    uint32_t path[7];
     uint8_t pathLength;
     bool isNewPath;
 } exportPrivateKeyContext_t;
