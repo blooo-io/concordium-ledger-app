@@ -29,7 +29,7 @@ APPNAME = "Concordium"
 
 # Application version
 APPVERSION_M = 5
-APPVERSION_N = 3
+APPVERSION_N = 4
 APPVERSION_P = 0
 APPVERSION = "$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)"
 
@@ -39,8 +39,18 @@ DEFINES += APPVERSION_M=$(APPVERSION_M)
 DEFINES += APPVERSION_N=$(APPVERSION_N)
 DEFINES += APPVERSION_P=$(APPVERSION_P)
 
+
+# Use the Ledger-specific CBOR files
+CBOR_LEDGER_DIR = ./lib/tinycbor-ledger
+CBOR_MAIN_DIR = ./lib/tinycbor/src
+
+
 # Application source files
-APP_SOURCE_PATH += src
+APP_SOURCE_PATH += src $(CBOR_LEDGER_DIR)
+
+# Include directories (headers are in main tinycbor)
+CFLAGS += -I$(CBOR_MAIN_DIR)
+
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
@@ -76,12 +86,7 @@ VARIANT_PARAM = COIN
 VARIANT_VALUES = CCD
 
 # Enabling DEBUG flag will enable PRINTF and disable optimizations
-DEBUG = 1
-
-ifeq ($(DEBUG),1)
-    # debugging helper functions and macros
-    CFLAGS    +=  -g
-endif
+#DEBUG = 1
 
 ########################################
 #     Application custom permissions   #
@@ -110,7 +115,7 @@ ENABLE_NBGL_QRCODE = 1
 ########################################
 # These advanced settings allow to disable some feature that are by
 # default enabled in the SDK `Makefile.standard_app`.
-#DISABLE_STANDARD_APP_FILES = 1 
+#DISABLE_STANDARD_APP_FILES = 1
 #DISABLE_DEFAULT_IO_SEPROXY_BUFFER_SIZE = 1 # To allow custom size declaration
 #DISABLE_STANDARD_APP_DEFINES = 1 # Will set all the following disablers
 #DISABLE_STANDARD_SNPRINTF = 1

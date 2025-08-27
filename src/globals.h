@@ -48,6 +48,7 @@
 #include "deployModule.h"
 #include "initContract.h"
 #include "updateContract.h"
+#include "signPLT.h"
 
 #define LEGACY_PURPOSE   1105
 #define LEGACY_COIN_TYPE 0
@@ -84,6 +85,11 @@
  */
 #define KEY_LENGTH 32
 
+/**
+ * P2 value for more data
+ */
+#define P2_MORE 0x80
+
 typedef enum {
     LEGACY_ID_CRED_SEC = 0,
     LEGACY_PRF_KEY = 1,
@@ -105,7 +111,8 @@ typedef enum {
     TRANSFER_WITH_MEMO = 22,
     TRANSFER_WITH_SCHEDULE_WITH_MEMO = 24,
     CONFIGURE_BAKER = 25,
-    CONFIGURE_DELEGATION = 26
+    CONFIGURE_DELEGATION = 26,
+    PLT_TRANSACTION = 27,
 } transactionKind_e;
 
 typedef struct {
@@ -149,6 +156,7 @@ typedef struct {
         signTransferContext_t signTransferContext;
         signTransferWithScheduleContext_t signTransferWithScheduleContext;
         signRegisterData_t signRegisterData;
+        signPLTContext_t signPLTContext;
     };
     cborContext_t cborContext;
 
@@ -208,6 +216,7 @@ enum {
     ERROR_INVALID_NAME_LENGTH = 0x6B0A,
     ERROR_INVALID_PARAMS_LENGTH = 0x6B0B,
     ERROR_INVALID_MODULE_REF = 0x6B09,
+    ERROR_INVALID_COININFO = 0x6B0C,
     // Error codes from the Ledger firmware
     ERROR_DEVICE_LOCKED = 0x530C,
     SW_WRONG_DATA_LENGTH = 0x6A87

@@ -40,6 +40,7 @@ int parseKeyDerivationPath(uint8_t *cdata, uint8_t dataLength) {
  */
 int hashHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t headerLength, uint8_t validType) {
     if (dataLength < headerLength + 1) {
+        PRINTF("Issue with length\n");
         THROW(ERROR_INVALID_TRANSACTION);
     }
     updateHash((cx_hash_t *)&tx_state->hash, cdata, headerLength);
@@ -47,6 +48,7 @@ int hashHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t headerLength, 
 
     uint8_t type = cdata[0];
     if (type != validType) {
+        PRINTF("Received kind is different than the expected one\n");
         THROW(ERROR_INVALID_TRANSACTION);
     }
     updateHash((cx_hash_t *)&tx_state->hash, cdata, 1);
@@ -70,10 +72,12 @@ int hashAccountTransactionHeaderAndKind(uint8_t *cdata,
     size_t outputSize = sizeof(accountSender->sender);
     if (base58check_encode(cdata, 32, accountSender->sender, &outputSize) == -1) {
         // The received address bytes are not a valid base58 encoding.
+        PRINTF("The received address bytes are not valid base85 encoded\n");
         THROW(ERROR_INVALID_TRANSACTION);
     }
     accountSender->sender[55] = '\0';
-
+    PRINTF("km-logs - [util.c] (hashAccountTransactionHeaderAndKind) - dataLength %d\n",
+           dataLength);
     return hashHeaderAndType(cdata,
                              dataLength,
                              ACCOUNT_TRANSACTION_HEADER_LENGTH,
@@ -87,6 +91,30 @@ int hashAccountTransactionHeaderAndKind(uint8_t *cdata,
  */
 int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpdateType) {
     return hashHeaderAndType(cdata, dataLength, UPDATE_HEADER_LENGTH, validUpdateType);
+}
+
+int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
+    PRINTF(
+        "km-logs [util.c] (handleHeaderAndKind) - before parsing derivation path - "
+        "dataLength %d\n",
+        dataLength);
+    // Parse the key derivation path, which should always be the first thing received
+    // in a command to the Ledger application.
+    int keyPathLength = parseKeyDerivationPath(cdata, dataLength);
+    cdata += keyPathLength;
+    uint8_t remainingDataLength = dataLength - keyPathLength;
+    PRINTF(
+        "km-logs [util.c] (handleHeaderAndKind) - after parsing derivation path - "
+        "remainingDataLength %d\n",
+        remainingDataLength);
+    // Initialize the hash that will be the hash of the whole transaction, which will be
+    // signed if the user approves.
+    if (cx_sha256_init(&tx_state->hash) != CX_SHA256) {
+        THROW(ERROR_FAILED_CX_OPERATION);
+    }
+    int headerLength = hashAccountTransactionHeaderAndKind(cdata, remainingDataLength, kind);
+
+    return keyPathLength + headerLength;
 }
 
 int handleHeaderAndToAddress(uint8_t *cdata,
@@ -274,7 +302,7 @@ void sign(uint8_t *input, uint8_t *signatureOnInput) {
     END_TRY;
 }
 
-#define l_CONST        48  // ceil((3 * ceil(log2(r))) / 16)
+#define l_CONST        48  // ceil((3 * ceil(log2(bls12_381_r))) / 16)
 #define BLS_KEY_LENGTH 32
 #define SEED_LENGTH    32
 
@@ -349,11 +377,11 @@ void blsKeygen(const uint8_t *seed, size_t seedLength, uint8_t *dst, size_t dstL
                        sk,
                        sizeof(sk));
 
-        ensureNoError(cx_math_modm_no_throw(sk, sizeof(sk), r, sizeof(r)));
+        ensureNoError(cx_math_modm_no_throw(sk, sizeof(sk), bls12_381_r, sizeof(bls12_381_r)));
     } while (cx_math_is_zero(sk, sizeof(sk)));
 
-    // Skip the first 16 bytes, because they are 0 due to calculating modulo r, which is 32 bytes
-    // (and sk has 48 bytes).
+    // Skip the first 16 bytes, because they are 0 due to calculating modulo bls12_381_r, which is
+    // 32 bytes (and sk has 48 bytes).
     memmove(dst, sk + l_CONST - BLS_KEY_LENGTH, BLS_KEY_LENGTH);
 }
 
@@ -382,4 +410,93 @@ size_t hashAndLoadU64Ratio(uint8_t *cdata, uint8_t *dst, uint8_t sizeOfDst) {
     memmove(dst + numLength, " / ", 3);
     numberToText(dst + numLength + 3, sizeOfDst - (numLength + 3), denominator);
     return 16;
+}
+
+bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, size_t output_size) {
+    // Hex string must have even length (each byte = 2 hex chars)
+    if (hex_len % 2 != 0) {
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        return false;
+    }
+
+    // Calculate number of bytes
+    size_t byte_count = hex_len / 2;
+
+    // Check if we have enough space in output buffer
+    if (byte_count > output_size) {
+        PRINTF("Output buffer too small: need %d bytes, have %d\n",
+               (int)byte_count,
+               (int)output_size);
+        return false;
+    }
+
+    // Convert hex pairs to bytes
+    for (size_t i = 0; i < byte_count; i++) {
+        // Get high and low nibbles
+        char high = hex_str[i * 2];
+        char low = hex_str[i * 2 + 1];
+
+        // Validate hex characters
+        if (!((high >= '0' && high <= '9') || (high >= 'a' && high <= 'f') ||
+              (high >= 'A' && high <= 'F')) ||
+            !((low >= '0' && low <= '9') || (low >= 'a' && low <= 'f') ||
+              (low >= 'A' && low <= 'F'))) {
+            PRINTF("Invalid hex character at position %d: '%c%c'\n", (int)i, high, low);
+            return false;
+        }
+
+        uint8_t byte_val = 0;
+
+        // High nibble
+        if (high >= '0' && high <= '9')
+            byte_val = (high - '0') << 4;
+        else if (high >= 'a' && high <= 'f')
+            byte_val = (high - 'a' + 10) << 4;
+        else if (high >= 'A' && high <= 'F')
+            byte_val = (high - 'A' + 10) << 4;
+
+        // Low nibble
+        if (low >= '0' && low <= '9')
+            byte_val |= (low - '0');
+        else if (low >= 'a' && low <= 'f')
+            byte_val |= (low - 'a' + 10);
+        else if (low >= 'A' && low <= 'F')
+            byte_val |= (low - 'A' + 10);
+
+        output[i] = byte_val;
+    }
+
+    return true;
+}
+
+bool hex_string_to_ascii(const char *hex_str, size_t hex_len, char *output, size_t output_size) {
+    // Hex string must have even length (each byte = 2 hex chars)
+    if (hex_len % 2 != 0) {
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        return false;
+    }
+
+    // Calculate number of bytes
+    size_t byte_count = hex_len / 2;
+
+    // Check if we have enough space in output buffer
+    if (byte_count > output_size) {
+        PRINTF("Output buffer too small: need %d bytes, have %d\n",
+               (int)byte_count,
+               (int)output_size);
+        return false;
+    }
+    uint8_t bytes[100];
+
+    if (!hex_string_to_bytes(hex_str, hex_len, bytes, sizeof(bytes))) {
+        return false;
+    }
+
+    // Actually convert to text (not nibbles!)
+    for (size_t i = 0; i < byte_count; i++) {
+        output[i] = (char)bytes[i];
+    }
+    output[byte_count] = '\0';  // Null terminate
+
+    return true;
 }

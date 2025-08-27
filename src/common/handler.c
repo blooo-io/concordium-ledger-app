@@ -84,6 +84,10 @@ int handler(uint8_t INS,
             LEDGER_ASSERT(cdata != NULL, "NULL cdata");
             handleUpdateContract(cdata, p1, lc);
             break;
+        case INS_SIGN_PLT_OPERATION:
+            LEDGER_ASSERT(cdata != NULL, "NULL cdata");
+            handleSignPltTransaction(cdata, lc, p1, (bool)(p2 & P2_MORE));
+            break;
         default:
             THROW(ERROR_INVALID_INSTRUCTION);
             break;

@@ -887,4 +887,25 @@ void uiUpdateContractDisplay() {
     ux_flow_init(0, ux_update_contract, NULL);
 }
 
+// Token ID
+UX_STEP_NOCB(ux_plt_operation_1_step,
+             bnnn_paging,
+             {.title = "Token ID", .text = (char *)global.withDataBlob.signPLTContext.tokenId});
+// Plt operation(s)
+UX_STEP_NOCB(ux_plt_operation_2_step,
+             bnnn_paging,
+             {.title = "Plt operation(s)",
+              .text = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay});
+UX_FLOW(ux_plt_operation,
+        &ux_sign_flow_shared_review,
+        &ux_sign_flow_account_sender_view,
+        &ux_plt_operation_1_step,
+        &ux_plt_operation_2_step,
+        &ux_sign_flow_shared_sign,
+        &ux_sign_flow_shared_decline);
+
+void uiPltOperationDisplay() {
+    ux_flow_init(0, ux_plt_operation, NULL);
+}
+
 #endif

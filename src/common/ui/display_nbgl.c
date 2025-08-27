@@ -1196,4 +1196,32 @@ void uiInitContractDisplay(void) {
                        review_choice_sign);
 }
 
+void uiPltOperationDisplay(void) {
+    uint8_t pairIndex = 0;
+    pairs[pairIndex].item = "Sender";
+    pairs[pairIndex].value = (char *)global_account_sender.sender;
+    pairIndex++;
+    pairs[pairIndex].item = "Token ID";
+    pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.tokenId;
+    pairIndex++;
+    pairs[pairIndex].item = "PLT Operation(s)";
+    pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
+    pairIndex++;
+    // Create the page content
+    nbgl_contentTagValueList_t content;
+    content.nbPairs = pairIndex;
+    content.pairs = pairs;
+    content.smallCaseForValue = false;
+    content.nbMaxLinesForValue = 0;
+    content.startIndex = 0;
+    // Setup the review screen
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &C_app_concordium_64px,
+                       "Review PLT Operation(s)",
+                       NULL,  // No subtitle
+                       "Sign PLT Operation(s)",
+                       review_choice_sign);
+}
+
 #endif
