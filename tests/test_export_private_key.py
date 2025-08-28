@@ -13,8 +13,10 @@ from ragger.navigator import NavInsID, NavIns
 from ragger.firmware import Firmware
 from utils import navigate_until_text_and_compare
 
+# Legacy Path
 
-# @pytest.mark.active_test_scope
+
+@pytest.mark.active_test_scope
 def test_export_standard_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
@@ -36,7 +38,7 @@ def test_export_standard_private_key_legacy_path(
     )
 
 
-# @pytest.mark.active_test_scope
+@pytest.mark.active_test_scope
 def test_export_recovery_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
@@ -58,7 +60,7 @@ def test_export_recovery_private_key_legacy_path(
     )
 
 
-# @pytest.mark.active_test_scope
+@pytest.mark.active_test_scope
 def test_export_prfkey_and_idcredsed_private_key_legacy_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
@@ -82,13 +84,16 @@ def test_export_prfkey_and_idcredsed_private_key_legacy_path(
     )
 
 
+# New Path
+
+
 @pytest.mark.active_test_scope
-def test_export_account_creation_private_key_new_path(
+def test_export_identity_credential_creation_private_key_new_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
-        "account_creation", identity_index=0, idp_index=0, account_index=0
+        "identity_credential_creation", idp_index=0, identity_index=1
     ):
         navigate_until_text_and_compare(
             firmware,
@@ -105,12 +110,12 @@ def test_export_account_creation_private_key_new_path(
 
 
 @pytest.mark.active_test_scope
-def test_export_identity_credential_creation_private_key_new_path(
+def test_export_account_creation_private_key_new_path(
     backend, firmware, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
-        "identity_credential_creation", identity_index=0, idp_index=0
+        "account_creation", idp_index=0, identity_index=1, account_index=2
     ):
         navigate_until_text_and_compare(
             firmware,
@@ -132,7 +137,7 @@ def test_export_id_recovery_private_key_new_path(
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
-        "id_recovery", identity_index=0, idp_index=0
+        "id_recovery", idp_index=0, identity_index=1
     ):
         navigate_until_text_and_compare(
             firmware,
@@ -154,7 +159,7 @@ def test_export_account_credential_discovery_private_key_new_path(
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
-        "account_credential_discovery", identity_index=0, idp_index=0
+        "account_credential_discovery", idp_index=0, identity_index=1
     ):
         navigate_until_text_and_compare(
             firmware,
@@ -176,7 +181,7 @@ def test_export_creation_of_zk_proof_private_key_new_path(
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
-        "creation_of_zk_proof", identity_index=0, idp_index=0, account_index=0
+        "creation_of_zk_proof", idp_index=0, identity_index=1, account_index=2
     ):
         navigate_until_text_and_compare(
             firmware,
