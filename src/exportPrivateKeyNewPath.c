@@ -58,10 +58,15 @@ int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
     derivationPath[1] = NEW_COIN_TYPE | HARDENED_OFFSET;
     derivationPath[2] = identityProvider | HARDENED_OFFSET;
     derivationPath[3] = identity | HARDENED_OFFSET;
+    PRINTF(
+        "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Base derivation "
+        "path "
+        ": ");
+    for (int i = 0; i < derivationPathLength; i++) {
+        PRINTF("%d/", derivationPath[i] & ~HARDENED_OFFSET);
+    }
+    PRINTF("\n");
 
-    // Set the keys to export depending on the purpose
-    PRINTF("km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Purpose: %d\n",
-           purpose);
     switch (purpose) {
         case P1_IDENTITY_CREDENTIAL_CREATION:
             keysToExport[keysToExportLength++] = NEW_ID_CRED_SEC;
@@ -104,45 +109,45 @@ int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
     // iterate over the keys to export
     for (int keyIndex = 0; keyIndex < keysToExportLength; keyIndex++) {
         // Edit the derivation path according to the key to export
-        derivationPathLength = editDerivationPathPerKeyType(derivationPath,
-                                                            derivationPathLength,
-                                                            keysToExport[keyIndex],
-                                                            account);
-        if (derivationPathLength == 0) {
+        uint8_t tempDeriviationPathLength = editDerivationPathPerKeyType(derivationPath,
+                                                                         derivationPathLength,
+                                                                         keysToExport[keyIndex],
+                                                                         account);
+        if (tempDeriviationPathLength == 0) {
             PRINTF(
                 "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Derivation "
                 "path length is too long\n");
             THROW(ERROR_BUFFER_OVERFLOW);
         }
 
-        // PRINT THE DERIVATION PATH
+        // PRINT THE KEY TO EXPORT
         PRINTF(
-            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Keys to export: "
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) -       Key to "
+            "export: "
             "%d\n",
             keysToExport[keyIndex]);
+
+        // PRINT THE DERIVATION PATH AFTER EDITING
         PRINTF(
-            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Derivation path "
-            "length: %d\n",
-            derivationPathLength);
-        PRINTF(
-            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - DERIVATION "
-            "PATH: ");
-        for (int j = 0; j < derivationPathLength; j++) {
-            PRINTF("%d ", derivationPath[j]);
+            "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) -       "
+            "Associated derivation path "
+            ": ");
+        for (int j = 0; j < tempDeriviationPathLength; j++) {
+            PRINTF("%d/", derivationPath[j] & ~HARDENED_OFFSET);
         }
         PRINTF("\n");
 
         outputPrivateKey[tx++] = 32;  // length of the private key
         if (keysToExport[keyIndex] == NEW_COMMITMENT_RANDOMNESS) {
             // export raw key
-            getPrivateKey(derivationPath, derivationPathLength, &tempPrivateKeyEd25519);
+            getPrivateKey(derivationPath, tempDeriviationPathLength, &tempPrivateKeyEd25519);
             for (int i = 0; i < 32; i++) {
                 tempPrivateKey[i] = tempPrivateKeyEd25519.d[i];
             }
         } else {
             // export bls key
             getBlsPrivateKey(derivationPath,
-                             derivationPathLength,
+                             tempDeriviationPathLength,
                              tempPrivateKey,
                              sizeof(tempPrivateKey));
         }
@@ -184,7 +189,7 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
 
     ////// Extract the identity provider //////
     if (remainingDataLength < 4) {
-        THROW(0x0001);
+        THROW(ERROR_INVALID_PATH);
     }
     uint32_t identityProvider = U4BE(dataBuffer, offset);
     PRINTF(
@@ -195,7 +200,7 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
 
     ////// Extract the identity //////
     if (remainingDataLength < 4) {
-        THROW(0x0002);
+        THROW(ERROR_INVALID_PATH);
     }
     uint32_t identity = U4BE(dataBuffer, offset);
     PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Identity: %d\n",
@@ -207,7 +212,7 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
     uint32_t account = 0xFFFFFFFF;
     if (p1 == P1_ACCOUNT_CREATION || p1 == P1_CREATION_OF_ZK_PROOF) {
         if (remainingDataLength < 4) {
-            THROW(0x0003);
+            THROW(ERROR_INVALID_PATH);
         }
         account = U4BE(dataBuffer, offset);
     }
@@ -222,35 +227,41 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
                                                                 sizeof(ctx->outputPrivateKeys));
     ////// Set up the display //////
     offset = 0;
-    // Add the identity provider to the display
+    /// Add the identity provider to the display
     memmove(ctx->display, "IDP#", 4);
     offset += 4;
     offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identityProvider);
-    // Remove the null terminator
+    /// Add the identity to the display
+    // Remove the null terminator from the display to add the identity
     offset -= 1;
-    // Add the identity to the display
     memmove(ctx->display + offset, " ID#", 4);
     offset += 4;
     offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
 
     if (p1 == P1_IDENTITY_CREDENTIAL_CREATION) {
-        memmove(ctx->displayHeader, "Identity Credential Creation", 30);
+        /// Set the display header
+        memmove(ctx->displayHeader, "ID Credential Creation", 23);
     } else if (p1 == P1_ACCOUNT_CREATION) {
-        memmove(ctx->displayHeader, "Account Creation", 18);
+        /// Set the display header
+        memmove(ctx->displayHeader, "Account Creation", 17);
+        /// Add the account to the display
+        // Remove the null terminator from the display to add the account
         offset -= 1;
-        // Add the account to the display
         memmove(ctx->display + offset, " ACCOUNT#", 9);
         offset += 9;
         bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, account);
     } else if (p1 == P1_ID_RECOVERY) {
+        /// Set the display header
         memmove(ctx->displayHeader, "ID Recovery", 12);
     } else if (p1 == P1_ACCOUNT_CREDENTIAL_DISCOVERY) {
-        memmove(ctx->displayHeader, "Account Credential Discovery", 30);
-        // Remove the null terminator
+        /// Set the display header
+        memmove(ctx->displayHeader, "Account Cred Discovery", 23);
     } else if (p1 == P1_CREATION_OF_ZK_PROOF) {
-        memmove(ctx->displayHeader, "ZK Proof Creation", 19);
+        /// Set the display header
+        memmove(ctx->displayHeader, "ZK Proof Creation", 18);
+        /// Add the account to the display
+        // Remove the null terminator from the display to add the account
         offset -= 1;
-        // Add the account to the display
         memmove(ctx->display + offset, " ACCOUNT#", 9);
         offset += 9;
         bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, account);

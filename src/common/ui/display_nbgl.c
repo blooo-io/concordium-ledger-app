@@ -143,7 +143,7 @@ void uiExportPrivateKeysNewPath(volatile unsigned int *flags) {
     nbgl_useCaseReview(TYPE_OPERATION,
                        &content,
                        &C_app_concordium_64px,
-                       "Export Private Keys",
+                       "Export Private Keys for",
                        NULL,
                        "Accept",
                        review_export_private_key_new_path);

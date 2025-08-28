@@ -117,7 +117,7 @@ UX_STEP_NOCB(ux_export_private_key_new_path_0_step,
              {
                  &C_icon_eye,
                  "Export",
-                 "private keys",
+                 "private keys for",
              });
 UX_STEP_NOCB(ux_export_private_key_new_path_1_step,
              bnnn_paging,
@@ -139,14 +139,6 @@ UX_STEP_CB(ux_export_private_key_new_path_approve_step,
                &C_icon_validate_14,
                "Accept",
            });
-// UX_STEP_CB(ux_export_private_key_new_path_accept_step,
-//            pnn,
-//            sendPrivateKeysNewPath(),
-//            {&C_icon_validate_14, "Accept", "export private keys"});
-// UX_STEP_CB(ux_export_private_key_new_path_decline_step,
-//            pnn,
-//            sendUserRejection(),
-//            {&C_icon_crossmark, "Decline to", "export private keys"});
 UX_FLOW(ux_export_private_key_new_path,
         &ux_export_private_key_new_path_0_step,
         &ux_export_private_key_new_path_1_step,
