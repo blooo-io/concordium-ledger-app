@@ -591,7 +591,7 @@ class BoilerplateCommandSender:
         ],
         identity_index: int,
         idp_index: int,
-        account_index: int = 0xFFFFFFFF,
+        account_index: int = None,
     ) -> Generator[None, None, None]:
         data = b""
         if export_type == "identity_credential_creation":
@@ -609,7 +609,8 @@ class BoilerplateCommandSender:
         ins = InsType.EXPORT_PRIVATE_KEY_NEW
         data += idp_index.to_bytes(4, byteorder="big")
         data += identity_index.to_bytes(4, byteorder="big")
-        data += account_index.to_bytes(4, byteorder="big")
+        if account_index is not None:
+            data += account_index.to_bytes(4, byteorder="big")
         print("km------------data", data.hex())
         with self.backend.exchange_async(
             cla=CLA,
