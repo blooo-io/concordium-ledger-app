@@ -1,26 +1,40 @@
 cmake_minimum_required(VERSION 3.10)
-
-# Simple standalone fuzzer project
-project(StandaloneFuzzer
-        VERSION 1.0
-        DESCRIPTION "Standalone Export Private Key Fuzzer"
-        LANGUAGES C)
+project(StandaloneFuzzer VERSION 1.0 DESCRIPTION "Standalone Export Private Key Fuzzer" LANGUAGES C)
 
 if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
-    message(FATAL_ERROR "Fuzzer needs to be built with Clang")
+  message(FATAL_ERROR "Fuzzer needs to be built with Clang")
 endif()
 
-# Simple compilation flags for fuzzing
-if (NOT DEFINED ENV{LIB_FUZZING_ENGINE})
-    set(COMPILATION_FLAGS "-g -Wall -fsanitize=fuzzer,address,undefined")
+# Favor ClusterFuzzLite-provided flags if present; otherwise use safe defaults.
+set(FALLBACK_CFLAGS "-O1 -g -fno-omit-frame-pointer -fsanitize-coverage=trace-cmp,indirect-calls,8bit-counters")
+if(DEFINED ENV{SANITIZER})
+  if("$ENV{SANITIZER}" STREQUAL "address")
+    string(APPEND FALLBACK_CFLAGS " -fsanitize=address -fsanitize-address-use-after-scope")
+  elseif("$ENV{SANITIZER}" STREQUAL "undefined")
+    string(APPEND FALLBACK_CFLAGS " -fsanitize=undefined -fno-sanitize-recover=undefined")
+  elseif("$ENV{SANITIZER}" STREQUAL "memory")
+    string(APPEND FALLBACK_CFLAGS " -fsanitize=memory -fsanitize-memory-track-origins=2")
+  endif()
+endif()
+
+# Use env CFLAGS if the action provided them; otherwise our fallback.
+if(DEFINED ENV{CFLAGS} AND NOT "$ENV{CFLAGS}" STREQUAL "")
+  set(EFF_CFLAGS "$ENV{CFLAGS}")
 else()
-    set(COMPILATION_FLAGS "$ENV{LIB_FUZZING_ENGINE} $ENV{CFLAGS}")
+  set(EFF_CFLAGS "${FALLBACK_CFLAGS}")
 endif()
 
-string(REPLACE " " ";" COMPILATION_FLAGS ${COMPILATION_FLAGS})
+# Engine flag (usually "-fsanitize=fuzzer" or a path to libFuzzer).
+set(EFF_ENGINE "$ENV{LIB_FUZZING_ENGINE}")
 
-# Create the standalone fuzzer - just one source file!
 add_executable(standalone_fuzzer src/standalone_fuzzer.c)
 
-target_compile_options(standalone_fuzzer PUBLIC ${COMPILATION_FLAGS})
-target_link_options(standalone_fuzzer PUBLIC ${COMPILATION_FLAGS})
+# Apply sanitizer & coverage flags to compile and link; add the engine ONLY at link.
+separate_arguments(EFF_CFLAGS_LIST NATIVE_COMMAND "${EFF_CFLAGS}")
+target_compile_options(standalone_fuzzer PRIVATE ${EFF_CFLAGS_LIST})
+target_link_options(standalone_fuzzer PRIVATE ${EFF_CFLAGS_LIST} ${EFF_ENGINE})
+
+# Optional: make it easier to debug what flags were used
+message(STATUS "SANITIZER=$ENV{SANITIZER}")
+message(STATUS "Using CFLAGS: ${EFF_CFLAGS}")
+message(STATUS "Using LIB_FUZZING_ENGINE: ${EFF_ENGINE}")
