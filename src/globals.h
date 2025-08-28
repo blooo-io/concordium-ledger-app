@@ -95,7 +95,9 @@ typedef enum {
     LEGACY_PRF_KEY = 1,
     // New path
     NEW_ID_CRED_SEC = 2,
-    NEW_PRF_KEY = 3
+    NEW_PRF_KEY = 3,
+    NEW_SIGNATURE_BLINDING_RANDOMNESS = 4,
+    NEW_COMMITMENT_RANDOMNESS = 5,
 } derivation_path_keys_t;
 
 typedef enum {

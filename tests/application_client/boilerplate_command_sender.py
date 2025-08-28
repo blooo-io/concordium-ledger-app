@@ -24,10 +24,16 @@ class P1(IntEnum):
     # Parameter 1 for scheduled transfer with memo
     P1_MEMO_SCHEDULED_TRANSFER = 0x03
     P1_INITIAL_SCHEDULED_TRANSFER_WITH_MEMO = 0x02
-    # Parameter 1 for export private key
-    P1_EXPORT_PRIVATE_KEY = 0x00
-    P1_EXPORT_WITH_ALTERNATIVE_DISPLAY = 0x01
-    P1_EXPORT_PRFKEY_AND_IDCREDSEC = 0x02
+    # Parameter 1 for export private key legacy path
+    P1_EXPORT_PRIVATE_KEY_LEGACY = 0x00
+    P1_EXPORT_WITH_ALTERNATIVE_DISPLAY_LEGACY = 0x01
+    P1_EXPORT_PRFKEY_AND_IDCREDSEC_LEGACY = 0x02
+    # Parameter 1 for export private key new path
+    P1_IDENTITY_CREDENTIAL_CREATION = 0x00
+    P1_ACCOUNT_CREATION = 0x01
+    P1_ID_RECOVERY = 0x02
+    P1_ACCOUNT_CREDENTIAL_DISCOVERY = 0x03
+    P1_CREATION_OF_ZK_PROOF = 0x04
     # Parameter 1 for transfer to public
     P1_INITIAL_TRANSFER_TO_PUBLIC = 0x00
     P1_REMAINING_AMOUNT_TRANSFER_TO_PUBLIC = 0x01
@@ -35,6 +41,7 @@ class P1(IntEnum):
     # Parameter 1 for register data
     P1_REGISTER_DATA_INITIAL = 0x00
     P1_REGISTER_DATA_PAYLOAD = 0x01
+    #
     # Basic P1 for all instructions
     P1_NONE = 0x00
 
@@ -545,26 +552,21 @@ class BoilerplateCommandSender:
             pass
 
     @contextmanager
-    def export_private_key(
+    def export_private_key_legacy(
         self,
         export_type: Literal["standard", "recovery", "prfkey_and_idcredsec"],
         identity_index: int,
-        idp_index: int = -1,
     ) -> Generator[None, None, None]:
         data = b""
         if export_type == "standard":
-            p1 = P1.P1_EXPORT_PRIVATE_KEY
+            p1 = P1.P1_EXPORT_PRIVATE_KEY_LEGACY
         elif export_type == "recovery":
-            p1 = P1.P1_EXPORT_WITH_ALTERNATIVE_DISPLAY
+            p1 = P1.P1_EXPORT_WITH_ALTERNATIVE_DISPLAY_LEGACY
         elif export_type == "prfkey_and_idcredsec":
-            p1 = P1.P1_EXPORT_PRFKEY_AND_IDCREDSEC
+            p1 = P1.P1_EXPORT_PRFKEY_AND_IDCREDSEC_LEGACY
         else:
             raise ValueError(f"Invalid export type: {export_type}")
-        if idp_index != -1:
-            ins = InsType.EXPORT_PRIVATE_KEY_NEW
-            data += idp_index.to_bytes(4, byteorder="big")
-        else:
-            ins = InsType.EXPORT_PRIVATE_KEY_LEGACY
+        ins = InsType.EXPORT_PRIVATE_KEY_LEGACY
 
         data += identity_index.to_bytes(4, byteorder="big")
         print("km------------data", data.hex())
@@ -573,6 +575,48 @@ class BoilerplateCommandSender:
             ins=ins,
             p1=p1,
             p2=P2.P2_EXPORT_BLS_KEY,
+            data=data,
+        ) as response:
+            yield response
+
+    @contextmanager
+    def export_private_key_new_path(
+        self,
+        export_type: Literal[
+            "identity_credential_creation",
+            "account_creation",
+            "id_recovery",
+            "account_credential_discovery",
+            "creation_of_zk_proof",
+        ],
+        identity_index: int,
+        idp_index: int,
+        account_index: int = None,
+    ) -> Generator[None, None, None]:
+        data = b""
+        if export_type == "identity_credential_creation":
+            p1 = P1.P1_IDENTITY_CREDENTIAL_CREATION
+        elif export_type == "account_creation":
+            p1 = P1.P1_ACCOUNT_CREATION
+        elif export_type == "id_recovery":
+            p1 = P1.P1_ID_RECOVERY
+        elif export_type == "account_credential_discovery":
+            p1 = P1.P1_ACCOUNT_CREDENTIAL_DISCOVERY
+        elif export_type == "creation_of_zk_proof":
+            p1 = P1.P1_CREATION_OF_ZK_PROOF
+        else:
+            raise ValueError(f"Invalid export type: {export_type}")
+        ins = InsType.EXPORT_PRIVATE_KEY_NEW
+        data += idp_index.to_bytes(4, byteorder="big")
+        data += identity_index.to_bytes(4, byteorder="big")
+        if account_index is not None:
+            data += account_index.to_bytes(4, byteorder="big")
+        print("km------------data", data.hex())
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=ins,
+            p1=p1,
+            p2=P2.P2_NONE,
             data=data,
         ) as response:
             yield response
