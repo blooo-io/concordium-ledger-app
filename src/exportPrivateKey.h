@@ -57,6 +57,7 @@ typedef struct {
     uint8_t pathLength;
     bool isNewPath;
     uint8_t outputPrivateKeys[MAX_KEYS_TO_EXPORT * LENGTH_AND_PRIVATE_KEY_SIZE];
+    uint8_t privateKeysLength;
 } exportPrivateKeyContext_t;
 
 void uiExportPrivateKey(volatile unsigned int *flags);

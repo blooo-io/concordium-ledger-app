@@ -86,6 +86,10 @@ int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
         default:
             THROW(ERROR_INVALID_PARAM);
     }
+    PRINTF(
+        "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Number of keys to "
+        "export: %d \n",
+        keysToExportLength);
 
     // check if the buffer is big enough
     if (keysToExportLength * LENGTH_AND_PRIVATE_KEY_SIZE > outputPrivateKeySize) {
@@ -149,6 +153,16 @@ int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
     }
     explicit_bzero(&tempPrivateKey, sizeof(tempPrivateKey));
     explicit_bzero(&tempPrivateKeyEd25519, sizeof(tempPrivateKeyEd25519));
+    PRINTF(
+        "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Private keys "
+        "length: %d\n",
+        tx);
+    PRINTF(
+        "km-logs - [exportPrivateKey.c] (exportNewPathPrivateKeysForPurpose) - Private keys: 0x");
+    for (int i = 0; i < tx; i++) {
+        PRINTF("%02x", outputPrivateKey[i]);
+    }
+    PRINTF("\n");
     return tx;
 }
 
@@ -163,14 +177,14 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
     }
 
     size_t offset = 0;
-    uint8_t remainingDataLength = lc - offset;
-    uint32_t purpose = U4BE(dataBuffer, offset);
-    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Purpose: %d\n",
-           purpose);
-    offset += 4;
-    remainingDataLength -= 4;
+    uint8_t remainingDataLength = lc;
+
+    PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Purpose (p1): %d\n",
+           p1);
+
+    ////// Extract the identity provider //////
     if (remainingDataLength < 4) {
-        THROW(ERROR_INVALID_PATH);
+        THROW(0x0001);
     }
     uint32_t identityProvider = U4BE(dataBuffer, offset);
     PRINTF(
@@ -178,30 +192,34 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
         identityProvider);
     offset += 4;
     remainingDataLength -= 4;
+
+    ////// Extract the identity //////
     if (remainingDataLength < 4) {
-        THROW(ERROR_INVALID_PATH);
+        THROW(0x0002);
     }
     uint32_t identity = U4BE(dataBuffer, offset);
     PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Identity: %d\n",
            identity);
+    offset += 4;
+    remainingDataLength -= 4;
+
+    ////// Extract the account //////
     uint32_t account = 0xFFFFFFFF;
     if (p1 == P1_ACCOUNT_CREATION || p1 == P1_CREATION_OF_ZK_PROOF) {
         if (remainingDataLength < 4) {
-            THROW(ERROR_INVALID_PATH);
+            THROW(0x0003);
         }
         account = U4BE(dataBuffer, offset);
-        offset += 4;
-        remainingDataLength -= 4;
     }
     PRINTF("km-logs - [exportPrivateKey.c] (handleExportPrivateKeyNewPath) - Account: %d\n",
            account);
 
-    exportNewPathPrivateKeysForPurpose(purpose,
-                                       identityProvider,
-                                       identity,
-                                       account,
-                                       ctx->outputPrivateKeys,
-                                       sizeof(ctx->outputPrivateKeys));
+    ctx->privateKeysLength = exportNewPathPrivateKeysForPurpose(p1,
+                                                                identityProvider,
+                                                                identity,
+                                                                account,
+                                                                ctx->outputPrivateKeys,
+                                                                sizeof(ctx->outputPrivateKeys));
     ////// Set up the display //////
     offset = 0;
     // Add the identity provider to the display
@@ -243,75 +261,12 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
            ctx->display);
 
     uiExportPrivateKeysNewPath(flags);
-
-    // ctx->isNewPath = true;
-    // uint8_t remainingDataLength = lc - offset;
-    // uint32_t identity_provider;
-    // uint32_t identity;
-    // if (ctx->isNewPath) {
-    //     if (remainingDataLength < 4) {
-    //         THROW(ERROR_INVALID_PATH);
-    //     }
-    //     identity_provider = U4BE(dataBuffer, offset);
-    //     offset += 4;
-    //     remainingDataLength -= 4;
-    // }
-    // if (remainingDataLength < 4) {
-    //     THROW(ERROR_INVALID_PATH);
-    // }
-    // identity = U4BE(dataBuffer, offset);
-    // uint32_t *keyDerivationPath;
-    // size_t pathLength;
-    // if (ctx->isNewPath) {
-    //     keyDerivationPath = (uint32_t[4]){NEW_PURPOSE | HARDENED_OFFSET,
-    //                                       NEW_COIN_TYPE | HARDENED_OFFSET,
-    //                                       identity_provider | HARDENED_OFFSET,
-    //                                       identity | HARDENED_OFFSET};
-    //     pathLength = 4;
-    // } else {
-    //     keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
-    //                                       LEGACY_COIN_TYPE | HARDENED_OFFSET,
-    //                                       ACCOUNT_SUBTREE | HARDENED_OFFSET,
-    //                                       NORMAL_ACCOUNTS | HARDENED_OFFSET,
-    //                                       identity | HARDENED_OFFSET};
-    //     pathLength = 5;
-    // }
-    // memmove(ctx->path, keyDerivationPath, pathLength * sizeof(uint32_t));
-    // ctx->pathLength = pathLength * sizeof(uint32_t);
-
-    // ctx->exportBoth = p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC;
-    // ctx->exportSeed = p2 == P2_LEGACY_SEED;
-
-    // // Reset the offset to 0
-    // offset = 0;
-    // if (ctx->isNewPath) {
-    //     memmove(ctx->display, "IDP#", 4);
-    //     offset += 4;
-    //     offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset,
-    //     identity_provider);
-    //     // Remove the null terminator
-    //     offset -= 1;
-    // }
-
-    // memmove(ctx->display + offset, " ID#", 4);
-    // offset += 4;
-    // bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
-
-    // if (p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC) {
-    //     memmove(ctx->displayHeader, "Create credential", 18);
-    // } else if (p1 == P1_LEGACY_PRF_KEY_RECOVERY) {
-    //     memmove(ctx->displayHeader, "Recover credentials", 20);
-    // } else if (p1 == P1_LEGACY_PRF_KEY) {
-    //     memmove(ctx->displayHeader, "Decrypt", 8);
-    // }
-
-    // uiExportPrivateKey(flags);
 }
 
 void sendPrivateKeysNewPath(void) {
-    if (sizeof(ctx->outputPrivateKeys) > sizeof(G_io_apdu_buffer)) {
+    if ((size_t)ctx->privateKeysLength > sizeof(G_io_apdu_buffer)) {
         THROW(ERROR_BUFFER_OVERFLOW);
     }
-    memmove(G_io_apdu_buffer, ctx->outputPrivateKeys, sizeof(ctx->outputPrivateKeys));
-    sendSuccess(sizeof(ctx->outputPrivateKeys));
+    memmove(G_io_apdu_buffer, ctx->outputPrivateKeys, ctx->privateKeysLength);
+    sendSuccess(ctx->privateKeysLength);
 }
