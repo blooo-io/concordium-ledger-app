@@ -17,24 +17,26 @@ if(DEFINED ENV{SANITIZER})
   endif()
 endif()
 
-# Use env CFLAGS if the action provided them; otherwise our fallback.
-if(DEFINED ENV{CFLAGS} AND NOT "$ENV{CFLAGS}" STREQUAL "")
-  set(EFF_CFLAGS "$ENV{CFLAGS}")
+# compatible with ClusterFuzzLite
+if (NOT DEFINED ENV{LIB_FUZZING_ENGINE})
+	set(COMPILATION_FLAGS_ "-g -Wall -fsanitize=fuzzer,address,undefined")
 else()
-  set(EFF_CFLAGS "${FALLBACK_CFLAGS}")
+	set(COMPILATION_FLAGS_ "$ENV{LIB_FUZZING_ENGINE} $ENV{CFLAGS}")
 endif()
 
-# Engine flag (usually "-fsanitize=fuzzer" or a path to libFuzzer).
-set(EFF_ENGINE "$ENV{LIB_FUZZING_ENGINE}")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(standalone_fuzzer src/standalone_fuzzer.c)
+string(REPLACE " " ";" COMPILATION_FLAGS ${COMPILATION_FLAGS_})
 
-# Apply sanitizer & coverage flags to compile and link; add the engine ONLY at link.
-separate_arguments(EFF_CFLAGS_LIST NATIVE_COMMAND "${EFF_CFLAGS}")
-target_compile_options(standalone_fuzzer PRIVATE ${EFF_CFLAGS_LIST})
-target_link_options(standalone_fuzzer PRIVATE ${EFF_CFLAGS_LIST} ${EFF_ENGINE})
+# include(extra/PLT.cmake)
 
-# Optional: make it easier to debug what flags were used
-message(STATUS "SANITIZER=$ENV{SANITIZER}")
-message(STATUS "Using CFLAGS: ${EFF_CFLAGS}")
-message(STATUS "Using LIB_FUZZING_ENGINE: ${EFF_ENGINE}")
+add_executable(standalone_export_pk_new_path_fuzzer src/standalone_export_pk_new_path_fuzzer.c)
+
+target_compile_options(standalone_export_pk_new_path_fuzzer PUBLIC ${COMPILATION_FLAGS})
+target_link_options(standalone_export_pk_new_path_fuzzer PUBLIC ${COMPILATION_FLAGS})
+# target_link_libraries(standalone_export_pk_new_path_fuzzer PUBLIC )
+
+add_executable(standalone_plt_fuzzer src/standalone_plt_fuzzer.c)
+target_compile_options(standalone_plt_fuzzer PUBLIC ${COMPILATION_FLAGS})
+target_link_options(standalone_plt_fuzzer PUBLIC ${COMPILATION_FLAGS})
+# target_link_libraries(standalone_plt_fuzzer PUBLIC pltlib)
