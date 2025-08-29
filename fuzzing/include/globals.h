@@ -1,3 +1,181 @@
+#pragma once
+
+// Fuzzing-specific minimal globals.h
+// This replaces the full globals.h for fuzzing builds to avoid Ledger SDK dependencies
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#ifdef FUZZING_BUILD
+
+// Constants from the real globals.h that we need
+#define MAX_TAG_CONTENT_SIZE        256
+#define MAX_TAGS                    24
+#define MAX_TAG_PARSED_CONTENT_SIZE 300
+#define MAX_TOKEN_ID_LENGTH         255
+#define MAX_CBOR_LENGTH             900
+#define MAX_PLT_DIPLAY_STR          2000
+
+// Error codes
+#define ERROR_INVALID_PARAM       0x6B03
+#define ERROR_INVALID_STATE       0x6B01
+#define ERROR_BUFFER_OVERFLOW     0x6B06
+#define ERROR_INVALID_TRANSACTION 0x6B04
+#define ERROR_INVALID_PATH        0x6B05
+#define SUCCESS                   0x9000
+
+// Transaction types
+#define PLT_TRANSACTION 27
+
+// Buffer structure
+typedef struct {
+    const uint8_t *ptr;
+    size_t size;
+    size_t offset;
+} buffer_t;
+
+// Tag parsing structures (from cborStrParsing.h)
+typedef struct {
+    uint64_t tag_number;
+    char content[MAX_TAG_CONTENT_SIZE];
+    size_t content_length;
+    bool is_valid;
+    char parsedContent[MAX_TAG_PARSED_CONTENT_SIZE];
+} tag_info_t;
+
+typedef struct {
+    tag_info_t tags[MAX_TAGS];
+    size_t count;
+} tag_list_t;
+
+// Mock implementations for fuzzing
+#define PRINTF printf
+
+// Utility macro for reading big-endian 32-bit integers
+#define U4BE(buf, off)                                                                \
+    ((uint32_t)(((buf)[off] << 24) | ((buf)[off + 1] << 16) | ((buf)[off + 2] << 8) | \
+                ((buf)[off + 3])))
+
+// Mock explicit_bzero for secure memory clearing
+static inline void explicit_bzero(void *ptr, size_t size) {
+    volatile uint8_t *p = (volatile uint8_t *)ptr;
+    for (size_t i = 0; i < size; i++) {
+        p[i] = 0;
+    }
+}
+
+#endif  // FUZZING_BUILD
+```
+
+```c : fuzzing / include /
+        ledger_assert.h
+#pragma once
+
+// Fuzzing-specific ledger_assert.h
+// Provides mock implementations of Ledger assertions for fuzzing
+
+#ifdef FUZZING_BUILD
+
+#include <stdio.h>
+#include "cbor.h"
+
+// Mock assertion macros for different return types
+#define LEDGER_ASSERT_BOOL(condition, msg)                  \
+    do {                                                    \
+        if (!(condition)) {                                 \
+            printf("LEDGER_ASSERT_BOOL FAILED: %s\n", msg); \
+            return false;                                   \
+        }                                                   \
+    } while (0)
+
+#define LEDGER_ASSERT_VOID(condition, msg)                  \
+    do {                                                    \
+        if (!(condition)) {                                 \
+            printf("LEDGER_ASSERT_VOID FAILED: %s\n", msg); \
+            return;                                         \
+        }                                                   \
+    } while (0)
+
+#define LEDGER_ASSERT_CBOR_ERROR(condition, msg)                  \
+    do {                                                          \
+        if (!(condition)) {                                       \
+            printf("LEDGER_ASSERT_CBOR_ERROR FAILED: %s\n", msg); \
+            return CborUnknownError;                              \
+        }                                                         \
+    } while (0)
+
+#define LEDGER_ASSERT(condition, msg) LEDGER_ASSERT_VOID(condition, msg)
+
+#define THROW(exception)                                     \
+    do {                                                     \
+        printf("THROW: 0x%x (%s)\n", exception, #exception); \
+        return;                                              \
+    } while (0)
+
+#else
+
+// Include the real ledger_assert.h when not fuzzing
+#include "../src/ledger_assert.h"
+
+#endif  // FUZZING_BUILD
+```
+
+```c : fuzzing /
+        include /
+        util.h
+#pragma once
+
+// Fuzzing-specific util.h
+// Provides minimal utility functions needed for CBOR parsing
+
+#ifdef FUZZING_BUILD
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+// Mock utility functions that might be referenced in cborStrParsing.c
+// These will be implemented in util_stub.c as needed
+
+#else
+
+// Include the real util.h when not fuzzing
+#include "../src/common/util.h"
+
+#endif  // FUZZING_BUILD
+```
+
+```c : fuzzing /
+        src /
+        util_stub.c
+// Fuzzing stub implementations for utility functions
+// This provides mock implementations of functions from src/common/util.c that are needed
+// by cborStrParsing.c but don't exist in the fuzzing environment
+
+#define FUZZING_BUILD 1
+#include "globals.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+
+#ifdef FUZZING_BUILD
+
+// Mock implementations of any utility functions that cborStrParsing.c depends on
+// We'll add these as compilation reveals what's needed
+
+// If additional utility functions are needed, add them here as compilation errors occur
+
+#endif  // FUZZING_BUILD
+```
+
+```c : fuzzing /
+        src /
+        standalone_plt_fuzzer.c
 // FUZZING 102: Standalone PLT Transaction Fuzzer
 // This fuzzes the handleSignPltTransaction function with REAL CBOR implementation
 
@@ -19,10 +197,10 @@
 #include "cbor.h"
 #include "cborStrParsing.h"
 
-// ========== STEP 4: TYPE DEFINITIONS ==========
+        // ========== STEP 4: TYPE DEFINITIONS ==========
 
-// Transaction context structure (from signPLT.h)
-typedef struct {
+        // Transaction context structure (from signPLT.h)
+        typedef struct {
     uint8_t transactionType;
     uint8_t tokenId[MAX_TOKEN_ID_LENGTH];
     uint8_t tokenIdLength;
@@ -116,9 +294,10 @@ bool cbor_read_string_or_byte_string(CborValue *it,
     if (err) {
         return err != CborNoError;
     }
-    
-    PRINTF("km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - string_ptr: %s\n",
-           string_ptr);
+
+    PRINTF(
+        "km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - string_ptr: %s\n",
+        string_ptr);
     PRINTF("km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - size: %d\n",
            (int)*output_size);
 
@@ -127,13 +306,16 @@ bool cbor_read_string_or_byte_string(CborValue *it,
         memcpy(output_ptr, string_ptr, *output_size);
     }
 
-    PRINTF("km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - output_ptr: 0x");
+    PRINTF(
+        "km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - output_ptr: 0x");
     for (size_t i = 0; i < *output_size; i++) {
         PRINTF("%02x", (uint8_t)output_ptr[i]);
     }
     PRINTF("\n");
-    PRINTF("km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - output_ptr.str: %s\n",
-           output_ptr);
+    PRINTF(
+        "km-logs - [standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - output_ptr.str: "
+        "%s\n",
+        output_ptr);
 
     return false;
 }
@@ -150,10 +332,14 @@ static void indent(int nestingLevel) {
 }
 
 bool add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
-    PRINTF("\nkm-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - trying to add: %s\n", src);
+    PRINTF("\nkm-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - trying to add: %s\n",
+           src);
     if (dst->size - dst->offset < src_size) {
-        PRINTF("km-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - src_size: 0x%08X, dst->size-offset: 0x%08X\n",
-               (uint32_t)src_size, (uint32_t)(dst->size - dst->offset));
+        PRINTF(
+            "km-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - src_size: 0x%08X, "
+            "dst->size-offset: 0x%08X\n",
+            (uint32_t)src_size,
+            (uint32_t)(dst->size - dst->offset));
         PRINTF("The destination buffer is too small\n");
         return false;
     }
@@ -173,8 +359,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborArrayType:
             case CborMapType: {
                 CborValue recursed;
-                LEDGER_ASSERT_CBOR_ERROR(cbor_value_is_container(it), "Should be a container but isn't");
-                
+                LEDGER_ASSERT_CBOR_ERROR(cbor_value_is_container(it),
+                                         "Should be a container but isn't");
+
                 temp = (type == CborArrayType) ? "[" : "{";
                 PRINTF("%s", temp);
                 if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
@@ -187,7 +374,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 if (err) return err;
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;
-                
+
                 indent(nestingLevel);
                 temp = (type == CborArrayType) ? "]," : "},";
                 PRINTF("%s", temp);
@@ -196,7 +383,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 }
                 continue;
             }
-            
+
             case CborIntegerType: {
                 char temp2[25], temp3[30];
                 uint64_t raw_val = 0;
@@ -224,13 +411,13 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 size_t buf_len;
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, false);
                 if (err) return err;
-                
+
                 char string_value[100] = {0};
                 if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
                     PRINTF("format_hex error\n");
                     return CborUnknownError;
                 }
-                
+
                 if (!add_char_array_to_buffer(out_buf, (char *)"0x", 2) ||
                     !add_char_array_to_buffer(out_buf, string_value, strlen(string_value)) ||
                     !add_char_array_to_buffer(out_buf, (char *)",", 1)) {
@@ -245,7 +432,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 size_t buf_len;
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, true);
                 if (err) return err;
-                
+
                 buf[buf_len] = '\0';
                 char temp2[256];
                 snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
@@ -314,7 +501,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 }
                 break;
             }
-            
+
             case CborFloatType: {
                 float val;
                 char temp2[32];
@@ -356,7 +543,8 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         PRINTF("%02x", cbor[i]);
     }
     PRINTF("\n");
-    PRINTF("km-logs - [standalone_plt_fuzzer.c] Starting CBOR parsing, %d bytes\n", (int)cborLength);
+    PRINTF("km-logs - [standalone_plt_fuzzer.c] Starting CBOR parsing, %d bytes\n",
+           (int)cborLength);
 
     CborParser parser;
     CborValue it;
@@ -369,7 +557,7 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
     char temp[MAX_PLT_DIPLAY_STR] = {0};
     buffer_t out_buf = {.ptr = (const uint8_t *)temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
     tag_list_t tag_list;
-    
+
     err = decodeCborRecursive(&it, 0, &out_buf);
     if (err) {
         PRINTF("Error while decoding cbor\n");
@@ -381,12 +569,14 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         PRINTF("Error while parsing cbor tags\n");
         return false;
     }
-    
+
     if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
-        PRINTF("display str is too small for value %zu < %zu\n", sizeof(ctx->pltOperationDisplay), out_buf.size);
+        PRINTF("display str is too small for value %zu < %zu\n",
+               sizeof(ctx->pltOperationDisplay),
+               out_buf.size);
         return false;
     }
-    
+
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
     ctx->pltOperationDisplay[out_buf.size - 1] = '\0';
 
@@ -398,14 +588,18 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more) {
     uint8_t remainingDataLength = lc;
 
-    PRINTF("km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) - Starting handling of plt transaction\n");
+    PRINTF(
+        "km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) - Starting handling of plt "
+        "transaction\n");
 
     if (chunk == 0) {
         explicit_bzero(ctx, sizeof(signPLTContext_t));
         ctx->currentCborLength = 0;
         ctx->totalCborLength = 0;
-        PRINTF("km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) Initial chunk about to process\n");
-        
+        PRINTF(
+            "km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) Initial chunk about to "
+            "process\n");
+
         uint8_t offset = handleHeaderAndKind(cdata, remainingDataLength, PLT_TRANSACTION);
         cdata += offset;
         remainingDataLength -= offset;
@@ -420,7 +614,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             PRINTF("Not enough data left\n");
             return;
         }
-        
+
         memcpy(ctx->tokenId, cdata, ctx->tokenIdLength);
         cdata += ctx->tokenIdLength;
         remainingDataLength -= ctx->tokenIdLength;
@@ -430,30 +624,33 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             PRINTF("%02x", ctx->tokenId[i]);
         }
         PRINTF("\n");
-        
+
         if (remainingDataLength < 4) {
             PRINTF("Not enough data left\n");
             return;
         }
-        
+
         ctx->totalCborLength = U4BE(cdata, 0);
-        PRINTF("km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) - cborLength %d\n", (int)ctx->totalCborLength);
+        PRINTF("km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) - cborLength %d\n",
+               (int)ctx->totalCborLength);
         cdata += 4;
         remainingDataLength -= 4;
 
         if (ctx->totalCborLength > sizeof(ctx->cbor)) {
-            PRINTF("Cbor buffer is too small to contain the complete cbor, %d > %zu\n", 
-                   (int)ctx->totalCborLength, sizeof(ctx->cbor));
+            PRINTF("Cbor buffer is too small to contain the complete cbor, %d > %zu\n",
+                   (int)ctx->totalCborLength,
+                   sizeof(ctx->cbor));
             return;
         }
     }
 
     if (remainingDataLength > sizeof(ctx->cbor) - ctx->currentCborLength) {
         PRINTF("Cbor received is larger than the buffer, %d > %zu\n",
-               remainingDataLength, sizeof(ctx->cbor) - ctx->currentCborLength);
+               remainingDataLength,
+               sizeof(ctx->cbor) - ctx->currentCborLength);
         return;
     }
-    
+
     memcpy(ctx->cbor + ctx->currentCborLength, cdata, remainingDataLength);
     ctx->currentCborLength += remainingDataLength;
 
@@ -469,7 +666,8 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             uiPltOperationDisplay();
         } else {
             PRINTF("Cbor received is not complete, %zu < %zu\n",
-                   ctx->currentCborLength, ctx->totalCborLength);
+                   ctx->currentCborLength,
+                   ctx->totalCborLength);
         }
     }
 }
@@ -505,3 +703,4 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     return 0;
 }
+```
