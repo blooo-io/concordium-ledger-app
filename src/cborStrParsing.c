@@ -86,8 +86,6 @@ static parsed_number_t parse_number(const char* str, const char* end) {
     bool is_negative = false;
     const char* current = str;
 
-    PRINTF("km-logs [cborStrParsing.c] (parse_number) - input - %s\n", str);
-
     // Skip whitespace
     while (current < end && (*current == ' ' || *current == '\t')) {
         current++;
@@ -119,16 +117,12 @@ static parsed_number_t parse_number(const char* str, const char* end) {
     }
 
     snprintf(result_str, sizeof(result_str), "%s", formated_num);
-    PRINTF("km-logs [cborStrParsing.c] (parse_number) - result - %s\n", result_str);
 
     return result;
 }
 
 // Function to extract tag information from the input string (Ledger-compatible)
 bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
-    PRINTF("km-logs [cborStrParsing.c] (extract_tags_ledger) - input - %s\n",
-           input ? input : "(null)");
-
     if (!input || !tag_list) return false;
 
     // Initialize tag list
@@ -146,8 +140,6 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
     const char* current = input;
 
     while ((current = find_substring(current, "Tag(")) != NULL && tag_list->count < MAX_TAGS) {
-        PRINTF("km-logs [cborStrParsing.c] (extract_tags_ledger) - current - %s\n", current);
-
         // Extract tag number
         const char* tag_start = current + 4;  // Skip "Tag("
         const char* tag_end = find_char(tag_start, ')');

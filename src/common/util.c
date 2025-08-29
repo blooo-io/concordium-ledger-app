@@ -76,8 +76,6 @@ int hashAccountTransactionHeaderAndKind(uint8_t *cdata,
         THROW(ERROR_INVALID_TRANSACTION);
     }
     accountSender->sender[55] = '\0';
-    PRINTF("km-logs - [util.c] (hashAccountTransactionHeaderAndKind) - dataLength %d\n",
-           dataLength);
     return hashHeaderAndType(cdata,
                              dataLength,
                              ACCOUNT_TRANSACTION_HEADER_LENGTH,
@@ -94,19 +92,11 @@ int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpd
 }
 
 int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
-    PRINTF(
-        "km-logs [util.c] (handleHeaderAndKind) - before parsing derivation path - "
-        "dataLength %d\n",
-        dataLength);
     // Parse the key derivation path, which should always be the first thing received
     // in a command to the Ledger application.
     int keyPathLength = parseKeyDerivationPath(cdata, dataLength);
     cdata += keyPathLength;
     uint8_t remainingDataLength = dataLength - keyPathLength;
-    PRINTF(
-        "km-logs [util.c] (handleHeaderAndKind) - after parsing derivation path - "
-        "remainingDataLength %d\n",
-        remainingDataLength);
     // Initialize the hash that will be the hash of the whole transaction, which will be
     // signed if the user approves.
     if (cx_sha256_init(&tx_state->hash) != CX_SHA256) {
