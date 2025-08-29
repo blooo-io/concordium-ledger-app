@@ -555,8 +555,8 @@ bool interpret_tag(tag_info_t* tag) {
     }
 }
 
-bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
-    if (!buffer || !buffer->ptr || !tag.is_valid || strlen(tag.parsedContent) == 0) {
+bool replace_tag_with_parsed_content(buffer_t* buffer, const tag_info_t* tag) {
+    if (!buffer || !buffer->ptr || !tag->is_valid || strlen(tag->parsedContent) == 0) {
         PRINTF("Invalid parameters for tag replacement\n");
         return false;
     }
@@ -564,7 +564,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
     // Create the search pattern ",Tag(tag_number):"
     char tag_pattern[32];
     char tag_number_str[22];
-    format_i64(tag_number_str, sizeof(tag_number_str), tag.tag_number);
+    format_i64(tag_number_str, sizeof(tag_number_str), tag->tag_number);
     snprintf(tag_pattern, sizeof(tag_pattern), ",Tag(%s):", tag_number_str);
 
     PRINTF("Looking for pattern: '%s'\n", tag_pattern);
@@ -588,7 +588,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
 
     // Get lengths
     size_t buffer_length = strlen((const char*)buffer->ptr);
-    size_t parsed_content_length = strlen(tag.parsedContent);
+    size_t parsed_content_length = strlen(tag->parsedContent);
 
     // Add 1 for the colon prefix
     size_t replacement_content_length = parsed_content_length + 1;
@@ -649,7 +649,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
 
     // Copy the colon and parsed content into the buffer
     mutable_buffer[replace_start_pos] = ':';
-    memcpy(mutable_buffer + replace_start_pos + 1, tag.parsedContent, parsed_content_length);
+    memcpy(mutable_buffer + replace_start_pos + 1, tag->parsedContent, parsed_content_length);
 
     // Update the buffer length if it changed
     if (replacement_content_length != total_replace_length) {
