@@ -5,6 +5,11 @@ static keyDerivationPath_t *keyPath = &path;
 static accountSender_t *accountSender = &global_account_sender;
 static const uint32_t HARDENED_OFFSET = 0x80000000;
 
+// Helper function to check if a character is a valid hex digit
+static inline bool is_hex_digit(char c) {
+    return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+}
+
 int parseKeyDerivationPath(uint8_t *cdata, uint8_t dataLength) {
     if (dataLength < 1) {
         THROW(ERROR_INVALID_PATH);
@@ -427,10 +432,7 @@ bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, s
         char low = hex_str[i * 2 + 1];
 
         // Validate hex characters
-        if (!((high >= '0' && high <= '9') || (high >= 'a' && high <= 'f') ||
-              (high >= 'A' && high <= 'F')) ||
-            !((low >= '0' && low <= '9') || (low >= 'a' && low <= 'f') ||
-              (low >= 'A' && low <= 'F'))) {
+        if (!is_hex_digit(high) || !is_hex_digit(low)) {
             PRINTF("Invalid hex character at position %d: '%c%c'\n", (int)i, high, low);
             return false;
         }
