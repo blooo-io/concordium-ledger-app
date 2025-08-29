@@ -1,5 +1,3 @@
-// FUZZING 101: Standalone Export Private Key Fuzzer
-// This teaches you how to build a self-contained fuzzer with minimal dependencies
 
 // ========== STEP 1: STANDARD INCLUDES ==========
 #include <stdint.h>
@@ -244,8 +242,8 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
 // ========== STEP 6: THE FUZZER ==========
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    // Need at least 8 bytes for a meaningful test
-    if (size < 8) return 0;
+    // Need at least 9 bytes for a meaningful test
+    if (size < 9) return 0;
 
     printf("\n=== FUZZER ITERATION (size=%zu) ===\n", size);
 

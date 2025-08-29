@@ -1,4 +1,3 @@
-// FUZZING 102: Standalone PLT Transaction Fuzzer
 // This fuzzes the handleSignPltTransaction function with minimal dependencies
 
 // ========== STEP 1: STANDARD INCLUDES ==========
