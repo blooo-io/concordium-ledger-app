@@ -118,29 +118,30 @@ static tx_state_t mock_tx_state;
 // Mock PRINTF - just use regular printf for debugging
 #define PRINTF printf
 
-// Mock THROW - instead of crashing, just return early with appropriate value
-#define THROW(exception)                                          \
-    do {                                                          \
-        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
-        return 0;                                                 \
+// THROW macros now call abort() after printing, to simulate a real crash/exit.
+
+#define THROW(exception)                                     \
+    do {                                                     \
+        printf("THROW: 0x%x (%s)\n", exception, #exception); \
+        abort();                                             \
     } while (0)
 
-#define THROW_BOOL(exception)                                     \
-    do {                                                          \
-        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
-        return false;                                             \
+#define THROW_BOOL(exception)                                \
+    do {                                                     \
+        printf("THROW: 0x%x (%s)\n", exception, #exception); \
+        abort();                                             \
     } while (0)
 
-#define THROW_CBOR_ERROR(exception)                               \
-    do {                                                          \
-        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
-        return CborUnknownError;                                  \
+#define THROW_CBOR_ERROR(exception)                          \
+    do {                                                     \
+        printf("THROW: 0x%x (%s)\n", exception, #exception); \
+        abort();                                             \
     } while (0)
 
-#define THROW_VOID(exception)                                     \
-    do {                                                          \
-        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
-        return;                                                   \
+#define THROW_VOID(exception)                                \
+    do {                                                     \
+        printf("THROW: 0x%x (%s)\n", exception, #exception); \
+        abort();                                             \
     } while (0)
 
 // Mock LEDGER_ASSERT - print and return on failure with appropriate value
@@ -431,7 +432,6 @@ bool cbor_read_string_or_byte_string(CborValue *it,
 
     return false;
 }
-
 void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
     PRINTF("\nkm-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - trying to add: %s\n",
            src);
