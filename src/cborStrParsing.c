@@ -144,15 +144,14 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         const char* tag_start = current + 4;  // Skip "Tag("
         const char* tag_end = find_char(tag_start, ')');
         if (!tag_end) {
-            current++;
-            continue;
+            PRINTF("Could not find closing parenthesis in tag\n");
+            return false;
         }
 
         parsed_number_t num = parse_number(tag_start, tag_end);
         if (num.is_signed) {
-            PRINTF("Warning: negative tag number %lld found\n", num.value.signed_val);
-            current++;
-            continue;
+            PRINTF("Tag number should be positive\n");
+            return false;
         }
         // Parse tag number, tag is always positive so we use the unsigned value
         uint64_t tag_number = num.value.unsigned_val;
@@ -160,8 +159,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         // Find the colon after the tag
         const char* colon = find_char(tag_end, ':');
         if (!colon) {
-            current++;
-            continue;
+            PRINTF("Could not find colon in tag\n");
+            return false;
         }
 
         // Find the start of content (skip whitespace)
@@ -171,8 +170,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         if (!*content_start) {
-            current++;
-            continue;
+            PRINTF("Could not find content in tag\n");
+            return false;
         }
 
         // Determine content type and find matching delimiter
@@ -186,8 +185,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         if (!content_end) {
-            current++;
-            continue;
+            PRINTF("Could not find content end in tag\n");
+            return false;
         }
 
         // Calculate content length (inclusive of delimiters)
@@ -196,8 +195,7 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         // Check if content fits in our buffer
         if (content_length >= MAX_TAG_CONTENT_SIZE) {
             PRINTF("Tag content too large: %d bytes\n", (uint32_t)content_length);
-            current++;
-            continue;
+            return false;
         }
 
         // Store tag information
