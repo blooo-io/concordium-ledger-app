@@ -712,7 +712,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             PRINTF("%02x", ctx->tokenId[i]);
         }
         PRINTF("\n");
-
+        if (remainingDataLength < 4) {
+            PRINTF("Not enough data left\n");
+            THROW_VOID(ERROR_INVALID_PARAM);
+        }
         // Parse OperationLength
         ctx->totalCborLength = U4BE(cdata, 0);
         PRINTF("km-logs [standalone_plt_fuzzer.c] (handleSignPltTransaction) - cborLength %d\n",

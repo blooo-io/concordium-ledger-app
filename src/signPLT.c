@@ -335,6 +335,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
                ctx->tokenId);
 
         // Parse OperationLength
+        if (remainingDataLength < 4) {
+            PRINTF("Not enough data left\n");
+            THROW(ERROR_INVALID_PARAM);
+        }
         ctx->totalCborLength = U4BE(cdata, 0);
         PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - cborLength %d\n",
                ctx->totalCborLength);
