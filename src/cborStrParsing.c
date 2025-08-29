@@ -210,15 +210,6 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         memcpy(tag_list->tags[tag_list->count].content, content_start, content_length);
         tag_list->tags[tag_list->count].content[content_length] = '\0';
 
-        PRINTF("Extracted Tag():%s\n",
-               //    8,
-               //    tag_list->tags[tag_list->count].tag_number,
-               tag_list->tags[tag_list->count].content);
-        // PRINTF("Extracted Tag(%llu): %.*s\n",
-        //        tag_list->tags[tag_list->count].tag_number,
-        //        (int)content_length,
-        //        tag_list->tags[tag_list->count].content);
-
         tag_list->count++;
 
         // Move past this tag for next iteration
@@ -240,18 +231,6 @@ tag_info_t* find_tag_by_number(tag_list_t* tag_list, uint64_t tag_number) {
 
     return NULL;
 }
-
-// bool get_str_i64(int64_t input, char *output, size_t output_size){
-//     if(output_size < 22){
-//         PRINTF("The output's size is too small to host a int64\n");
-//         return false;
-//     }
-//     char temp[22];
-//     char result[22];
-
-//     format_i64(temp, sizeof(temp), input);
-
-// }
 
 // Function to print extracted tags (using PRINTF)
 void print_tags_ledger(const tag_list_t* tag_list) {
@@ -454,11 +433,6 @@ bool parse_tag_4(tag_info_t* tag) {
 
     // Negative exponent - need to format with decimal places
     int64_t abs_exponent = -exponent;
-
-    // if (abs_exponent > 18) {  // Prevent too many decimal places
-    //     PRINTF("Warning: exponent %lld is too large\n", abs_exponent);
-    //     return false;
-    // }
 
     // Manual formatting of mantissa with abs_exponent decimals, using tag->parsedContent as output
     // 1. Convert mantissa to string

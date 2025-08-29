@@ -13,15 +13,8 @@
 
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more);
 
-// typedef enum {
-//     TX_PLT_INITIAL = 49,
-//     TX_PLT_CBOR_INITIAL,
-//     TX_PLT_CBOR,
-// } signPLTState_t;
-
 typedef struct {
     uint8_t transactionType;
-    // signPLTState_t state;
     uint8_t tokenId[MAX_TOKEN_ID_LENGTH];
     uint8_t tokenIdLength;
     uint8_t cbor[MAX_CBOR_LENGTH];

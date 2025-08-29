@@ -8,7 +8,6 @@
 #include "cborinternal_p.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
-// static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
 static tx_state_t *tx_state = &global_tx_state;
 
 #define P1_INITIAL 0x01
@@ -120,8 +119,6 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborByteStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                // err = cbor_value_calculate_string_length(it, buf_len);
-                // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, false);
                 if (err) return err;
                 char string_value[100] = {0};
@@ -139,26 +136,14 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborTextStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                // err = cbor_value_calculate_string_length(it, buf_len);
-                // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, true);
                 if (err) return err;
                 // null terminate the string
                 buf[buf_len] = '\0';
-                // char string_value[20];
-                // if (!format_hex(buf, buf_len, string_value, sizeof(string_value))) {
-                //     PRINTF("format_hex error");
-                //     THROW(0x0010);
-                // }
                 char temp2[256];
                 snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
                 PRINTF("%s", temp2);
                 add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
-                // PRINTF("%.*H\n", buf_len, buf);
-                // err = cbor_value_dup_text_string(it, &buf, &n, it);
-                // if (err) return err;  // parse error
-                // PRINTF("CborTextStringType\n");
-                // free(buf);
                 break;
             }
 
