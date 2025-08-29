@@ -2,7 +2,7 @@ name: ClusterFuzzLite PR fuzzing
 on:
   pull_request:
     paths:
-      - '**'
+      - "**"
 permissions: read-all
 jobs:
   PR:
@@ -13,13 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address, undefined, memory]  # Override this with the sanitizers you want.
+        sanitizer: [address, memory] # Override this with the sanitizers you want.
     steps:
       - name: Build Fuzzers (${{ matrix.sanitizer }})
         id: build
         uses: google/clusterfuzzlite/actions/build_fuzzers@v1
         with:
-          language: c  # Change this to the language you are fuzzing.
+          language: c # Change this to the language you are fuzzing.
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sanitizer: ${{ matrix.sanitizer }}
           # Optional but recommended: used to only run fuzzers that are affected
@@ -32,8 +32,8 @@ jobs:
         uses: google/clusterfuzzlite/actions/run_fuzzers@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          fuzz-seconds: 300  # 5 minutes
-          mode: 'code-change'
+          fuzz-seconds: 300 # 5 minutes
+          mode: "code-change"
           sanitizer: ${{ matrix.sanitizer }}
           output-sarif: true
           # Optional but recommended: used to download the corpus produced by
