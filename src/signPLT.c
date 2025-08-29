@@ -296,7 +296,7 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
-    ctx->pltOperationDisplay[out_buf.size] = '\0';
+    ctx->pltOperationDisplay[out_buf.size - 1] = '\0';
     // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
     //        ctx->pltOperationDisplay);
 
