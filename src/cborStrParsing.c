@@ -581,7 +581,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, const tag_info_t* tag) {
 
     // Calculate the total length to replace: ",Tag(N):" + content_length
     size_t pattern_length = strlen(tag_pattern);
-    size_t total_replace_length = pattern_length + tag.content_length;
+    size_t total_replace_length = pattern_length + tag->content_length;
 
     // Get the position in the buffer where replacement starts
     size_t replace_start_pos = tag_start - (const char*)buffer->ptr;
@@ -743,7 +743,7 @@ bool parse_tags_in_buffer(buffer_t* buffer, tag_list_t* tag_list) {
     for (size_t i = 0; i < tag_list->count; i++) {
         if (tag_list->tags[i].is_valid) {
             good1 = interpret_tag(&tag_list->tags[i]);
-            good2 = replace_tag_with_parsed_content(buffer, tag_list->tags[i]);
+            good2 = replace_tag_with_parsed_content(buffer, &tag_list->tags[i]);
         }
         if (!good1 || !good2) {
             PRINTF("Error while interpreting or replacing tags\n");
