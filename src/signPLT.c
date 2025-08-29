@@ -276,7 +276,7 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         THROW(ERROR_INVALID_PARAM);
     }
 
-    PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+    // PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
 
     if (!parse_tags_in_buffer(&out_buf, &tag_list)) {
         PRINTF("Error while parsing cbor tags\n");
@@ -288,10 +288,17 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
     }
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+    // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
+        PRINTF("display str is too small for value %d < %d\n",
+               sizeof(ctx->pltOperationDisplay),
+               out_buf.size);
+        THROW(ERROR_BUFFER_OVERFLOW);
+    }
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
-           ctx->pltOperationDisplay);
+    ctx->pltOperationDisplay[out_buf.size] = '\0';
+    // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
+    //        ctx->pltOperationDisplay);
 
     return true;
 }
