@@ -8,7 +8,6 @@
 #include "cborinternal_p.h"
 
 static signPLTContext_t *ctx = &global.withDataBlob.signPLTContext;
-// static cborContext_t *cbor_context = &global.withDataBlob.cborContext;
 static tx_state_t *tx_state = &global_tx_state;
 
 #define P1_INITIAL 0x01
@@ -32,36 +31,24 @@ bool cbor_read_string_or_byte_string(CborValue *it,
     if (err) {
         return true;
     }
-    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - string_ptr: %s\n",
-           string_ptr);
-    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - size: %d\n", *output_size);
 
     // Copy the string data to the output buffer
     if (*output_size > 0 && output_ptr != NULL) {
         memcpy(output_ptr, string_ptr, *output_size);
     }
 
-    // PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - size: %d\n",
-    //        (uint32_t)*output_size);
-    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - output_ptr: 0x%.*H\n",
-           *output_size,
-           output_ptr);
-    PRINTF("km-logs - [signPLT.c] (cbor_read_string_or_byte_string) - output_ptr.str: %s\n",
-           output_ptr);
-
     return false;
 }
 
 void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
-    PRINTF("\nkm-logs - [signPLT.c] (add_char_array_to_buffer) - trying to add: %s\n", src);
     if (dst->size - dst->offset < src_size) {
         PRINTF(
-            "km-logs - [signPLT.c] (add_char_array_to_buffer) - src_size: 0x%08X, "
+            "src_size: 0x%08X, "
             "dst->size-offset: "
             "0x%08X\n",
             src_size,
             dst->size - dst->offset);
-        PRINTF("Buffer overflow\n");
+        PRINTF("The destination buffer is too small\n");
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy((void *)(dst->ptr + dst->offset), src, src_size);
@@ -132,8 +119,6 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborByteStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                // err = cbor_value_calculate_string_length(it, buf_len);
-                // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, false);
                 if (err) return err;
                 char string_value[100] = {0};
@@ -151,26 +136,14 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborTextStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                // err = cbor_value_calculate_string_length(it, buf_len);
-                // err = _cbor_value_copy_string(it, buf, sizeof(buf), NULL);
                 err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, true);
                 if (err) return err;
                 // null terminate the string
                 buf[buf_len] = '\0';
-                // char string_value[20];
-                // if (!format_hex(buf, buf_len, string_value, sizeof(string_value))) {
-                //     PRINTF("format_hex error");
-                //     THROW(0x0010);
-                // }
                 char temp2[256];
                 snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
                 PRINTF("%s", temp2);
                 add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
-                // PRINTF("%.*H\n", buf_len, buf);
-                // err = cbor_value_dup_text_string(it, &buf, &n, it);
-                // if (err) return err;  // parse error
-                // PRINTF("CborTextStringType\n");
-                // free(buf);
                 break;
             }
 
@@ -253,9 +226,6 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
 }
 
 bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - cbor: %.*H\n", cborLength, cbor);
-    PRINTF("km-logs - [signPLT.c] Starting CBOR parsing, %d bytes\n", cborLength);
-
     CborParser parser;
     CborValue it;
     CborError err;
@@ -263,7 +233,6 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
     // Initialize parser
     err = cbor_parser_init(cbor, cborLength, 0, &parser, &it);
     if (err) {
-        PRINTF("km-logs - [signPLT.c] CBOR parser init failed\n");
         return false;
     }
 
@@ -276,22 +245,18 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         THROW(ERROR_INVALID_PARAM);
     }
 
-    PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
-
     if (!parse_tags_in_buffer(&out_buf, &tag_list)) {
         PRINTF("Error while parsing cbor tags\n");
         THROW(ERROR_INVALID_PARAM);
     }
-    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
+    if (sizeof(ctx->pltOperationDisplay) < out_buf.size + 1) {
         PRINTF("display str is too small for value %d < %d\n",
                sizeof(ctx->pltOperationDisplay),
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
     }
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
-           ctx->pltOperationDisplay);
+    ctx->pltOperationDisplay[out_buf.size] = '\0';
 
     return true;
 }
@@ -301,14 +266,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
 ) {
     uint8_t remainingDataLength = lc;
 
-    PRINTF(
-        "km-logs [signPLT.c] (handleSignPltTransaction) - Starting handling of plt transaction\n");
-
     if (chunk == 0) {
         explicit_bzero(ctx, sizeof(signPLTContext_t));
         ctx->currentCborLength = 0;
         ctx->totalCborLength = 0;
-        PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) Initial chunk about to process\n");
         // Parse and hash the header and kind
         uint8_t offset = handleHeaderAndKind(cdata, remainingDataLength, PLT_TRANSACTION);
         cdata += offset;
@@ -330,14 +291,12 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         cdata += ctx->tokenIdLength;
         remainingDataLength -= ctx->tokenIdLength;
 
-        PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - TokenID %.*H\n",
-               ctx->tokenIdLength,
-               ctx->tokenId);
-
         // Parse OperationLength
+        if (remainingDataLength < 4) {
+            PRINTF("Not enough data left\n");
+            THROW(ERROR_INVALID_PARAM);
+        }
         ctx->totalCborLength = U4BE(cdata, 0);
-        PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - cborLength %d\n",
-               ctx->totalCborLength);
         cdata += 4;
         remainingDataLength -= 4;
 

@@ -86,8 +86,6 @@ static parsed_number_t parse_number(const char* str, const char* end) {
     bool is_negative = false;
     const char* current = str;
 
-    PRINTF("km-logs [cborStrParsing.c] (parse_number) - input - %s\n", str);
-
     // Skip whitespace
     while (current < end && (*current == ' ' || *current == '\t')) {
         current++;
@@ -119,16 +117,12 @@ static parsed_number_t parse_number(const char* str, const char* end) {
     }
 
     snprintf(result_str, sizeof(result_str), "%s", formated_num);
-    PRINTF("km-logs [cborStrParsing.c] (parse_number) - result - %s\n", result_str);
 
     return result;
 }
 
 // Function to extract tag information from the input string (Ledger-compatible)
 bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
-    PRINTF("km-logs [cborStrParsing.c] (extract_tags_ledger) - input - %s\n",
-           input ? input : "(null)");
-
     if (!input || !tag_list) return false;
 
     // Initialize tag list
@@ -146,21 +140,18 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
     const char* current = input;
 
     while ((current = find_substring(current, "Tag(")) != NULL && tag_list->count < MAX_TAGS) {
-        PRINTF("km-logs [cborStrParsing.c] (extract_tags_ledger) - current - %s\n", current);
-
         // Extract tag number
         const char* tag_start = current + 4;  // Skip "Tag("
         const char* tag_end = find_char(tag_start, ')');
         if (!tag_end) {
-            current++;
-            continue;
+            PRINTF("Could not find closing parenthesis in tag\n");
+            return false;
         }
 
         parsed_number_t num = parse_number(tag_start, tag_end);
         if (num.is_signed) {
-            PRINTF("Warning: negative tag number %lld found\n", num.value.signed_val);
-            current++;
-            continue;
+            PRINTF("Tag number should be positive\n");
+            return false;
         }
         // Parse tag number, tag is always positive so we use the unsigned value
         uint64_t tag_number = num.value.unsigned_val;
@@ -168,8 +159,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         // Find the colon after the tag
         const char* colon = find_char(tag_end, ':');
         if (!colon) {
-            current++;
-            continue;
+            PRINTF("Could not find colon in tag\n");
+            return false;
         }
 
         // Find the start of content (skip whitespace)
@@ -179,8 +170,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         if (!*content_start) {
-            current++;
-            continue;
+            PRINTF("Could not find content in tag\n");
+            return false;
         }
 
         // Determine content type and find matching delimiter
@@ -194,8 +185,8 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         if (!content_end) {
-            current++;
-            continue;
+            PRINTF("Could not find content end in tag\n");
+            return false;
         }
 
         // Calculate content length (inclusive of delimiters)
@@ -204,8 +195,7 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         // Check if content fits in our buffer
         if (content_length >= MAX_TAG_CONTENT_SIZE) {
             PRINTF("Tag content too large: %d bytes\n", (uint32_t)content_length);
-            current++;
-            continue;
+            return false;
         }
 
         // Store tag information
@@ -217,15 +207,6 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         // Copy content to static buffer
         memcpy(tag_list->tags[tag_list->count].content, content_start, content_length);
         tag_list->tags[tag_list->count].content[content_length] = '\0';
-
-        PRINTF("Extracted Tag():%s\n",
-               //    8,
-               //    tag_list->tags[tag_list->count].tag_number,
-               tag_list->tags[tag_list->count].content);
-        // PRINTF("Extracted Tag(%llu): %.*s\n",
-        //        tag_list->tags[tag_list->count].tag_number,
-        //        (int)content_length,
-        //        tag_list->tags[tag_list->count].content);
 
         tag_list->count++;
 
@@ -248,18 +229,6 @@ tag_info_t* find_tag_by_number(tag_list_t* tag_list, uint64_t tag_number) {
 
     return NULL;
 }
-
-// bool get_str_i64(int64_t input, char *output, size_t output_size){
-//     if(output_size < 22){
-//         PRINTF("The output's size is too small to host a int64\n");
-//         return false;
-//     }
-//     char temp[22];
-//     char result[22];
-
-//     format_i64(temp, sizeof(temp), input);
-
-// }
 
 // Function to print extracted tags (using PRINTF)
 void print_tags_ledger(const tag_list_t* tag_list) {
@@ -463,11 +432,6 @@ bool parse_tag_4(tag_info_t* tag) {
     // Negative exponent - need to format with decimal places
     int64_t abs_exponent = -exponent;
 
-    // if (abs_exponent > 18) {  // Prevent too many decimal places
-    //     PRINTF("Warning: exponent %lld is too large\n", abs_exponent);
-    //     return false;
-    // }
-
     // Manual formatting of mantissa with abs_exponent decimals, using tag->parsedContent as output
     // 1. Convert mantissa to string
     char mantissa_str[258];
@@ -589,8 +553,8 @@ bool interpret_tag(tag_info_t* tag) {
     }
 }
 
-bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
-    if (!buffer || !buffer->ptr || !tag.is_valid || strlen(tag.parsedContent) == 0) {
+bool replace_tag_with_parsed_content(buffer_t* buffer, const tag_info_t* tag) {
+    if (!buffer || !buffer->ptr || !tag->is_valid || strlen(tag->parsedContent) == 0) {
         PRINTF("Invalid parameters for tag replacement\n");
         return false;
     }
@@ -598,7 +562,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
     // Create the search pattern ",Tag(tag_number):"
     char tag_pattern[32];
     char tag_number_str[22];
-    format_i64(tag_number_str, sizeof(tag_number_str), tag.tag_number);
+    format_i64(tag_number_str, sizeof(tag_number_str), tag->tag_number);
     snprintf(tag_pattern, sizeof(tag_pattern), ",Tag(%s):", tag_number_str);
 
     PRINTF("Looking for pattern: '%s'\n", tag_pattern);
@@ -615,14 +579,14 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
 
     // Calculate the total length to replace: ",Tag(N):" + content_length
     size_t pattern_length = strlen(tag_pattern);
-    size_t total_replace_length = pattern_length + tag.content_length;
+    size_t total_replace_length = pattern_length + tag->content_length;
 
     // Get the position in the buffer where replacement starts
     size_t replace_start_pos = tag_start - (const char*)buffer->ptr;
 
     // Get lengths
     size_t buffer_length = strlen((const char*)buffer->ptr);
-    size_t parsed_content_length = strlen(tag.parsedContent);
+    size_t parsed_content_length = strlen(tag->parsedContent);
 
     // Add 1 for the colon prefix
     size_t replacement_content_length = parsed_content_length + 1;
@@ -683,7 +647,7 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, tag_info_t tag) {
 
     // Copy the colon and parsed content into the buffer
     mutable_buffer[replace_start_pos] = ':';
-    memcpy(mutable_buffer + replace_start_pos + 1, tag.parsedContent, parsed_content_length);
+    memcpy(mutable_buffer + replace_start_pos + 1, tag->parsedContent, parsed_content_length);
 
     // Update the buffer length if it changed
     if (replacement_content_length != total_replace_length) {
@@ -777,7 +741,7 @@ bool parse_tags_in_buffer(buffer_t* buffer, tag_list_t* tag_list) {
     for (size_t i = 0; i < tag_list->count; i++) {
         if (tag_list->tags[i].is_valid) {
             good1 = interpret_tag(&tag_list->tags[i]);
-            good2 = replace_tag_with_parsed_content(buffer, tag_list->tags[i]);
+            good2 = replace_tag_with_parsed_content(buffer, &tag_list->tags[i]);
         }
         if (!good1 || !good2) {
             PRINTF("Error while interpreting or replacing tags\n");

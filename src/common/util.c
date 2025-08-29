@@ -5,6 +5,11 @@ static keyDerivationPath_t *keyPath = &path;
 static accountSender_t *accountSender = &global_account_sender;
 static const uint32_t HARDENED_OFFSET = 0x80000000;
 
+// Helper function to check if a character is a valid hex digit
+static inline bool is_hex_digit(char c) {
+    return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
+}
+
 int parseKeyDerivationPath(uint8_t *cdata, uint8_t dataLength) {
     if (dataLength < 1) {
         THROW(ERROR_INVALID_PATH);
@@ -76,8 +81,6 @@ int hashAccountTransactionHeaderAndKind(uint8_t *cdata,
         THROW(ERROR_INVALID_TRANSACTION);
     }
     accountSender->sender[55] = '\0';
-    PRINTF("km-logs - [util.c] (hashAccountTransactionHeaderAndKind) - dataLength %d\n",
-           dataLength);
     return hashHeaderAndType(cdata,
                              dataLength,
                              ACCOUNT_TRANSACTION_HEADER_LENGTH,
@@ -94,19 +97,11 @@ int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpd
 }
 
 int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
-    PRINTF(
-        "km-logs [util.c] (handleHeaderAndKind) - before parsing derivation path - "
-        "dataLength %d\n",
-        dataLength);
     // Parse the key derivation path, which should always be the first thing received
     // in a command to the Ledger application.
     int keyPathLength = parseKeyDerivationPath(cdata, dataLength);
     cdata += keyPathLength;
     uint8_t remainingDataLength = dataLength - keyPathLength;
-    PRINTF(
-        "km-logs [util.c] (handleHeaderAndKind) - after parsing derivation path - "
-        "remainingDataLength %d\n",
-        remainingDataLength);
     // Initialize the hash that will be the hash of the whole transaction, which will be
     // signed if the user approves.
     if (cx_sha256_init(&tx_state->hash) != CX_SHA256) {
@@ -437,10 +432,7 @@ bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, s
         char low = hex_str[i * 2 + 1];
 
         // Validate hex characters
-        if (!((high >= '0' && high <= '9') || (high >= 'a' && high <= 'f') ||
-              (high >= 'A' && high <= 'F')) ||
-            !((low >= '0' && low <= '9') || (low >= 'a' && low <= 'f') ||
-              (low >= 'A' && low <= 'F'))) {
+        if (!is_hex_digit(high) || !is_hex_digit(low)) {
             PRINTF("Invalid hex character at position %d: '%c%c'\n", (int)i, high, low);
             return false;
         }

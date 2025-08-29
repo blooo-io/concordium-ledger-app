@@ -234,22 +234,6 @@ void getBlsPrivateKey(uint32_t *keyPathInput,
  */
 size_t hashAndLoadU64Ratio(uint8_t *cdata, uint8_t *dst, uint8_t sizeOfDst);
 
-// /**
-//  * Converts a hexadecimal string to its corresponding ASCII character representation.
-//  * Each pair of hex characters is interpreted as a byte and converted to a printable character.
-//  * Non-printable bytes are replaced with '.' in the output.
-//  *
-//  * @param hex_str      The input hexadecimal string (not null-terminated, may contain
-//  *upper/lowercase).
-//  * @param hex_len      The length of the hexadecimal string (must be even).
-//  * @param output       The buffer to write the resulting ASCII string (null-terminated).
-//  * @param output_size  The size of the output buffer (must be at least (hex_len / 2) + 1).
-//  * @return             true if conversion succeeds, false if input is invalid or output buffer is
-//  *too small.
-//  *
-//  **/
-// bool hex_string_to_chars(const char *hex_str, size_t hex_len, char *output, size_t output_size);
-
 /**
  * Converts a hex string to bytes array
  * @param hex_str [in] the hex string to convert (without 0x prefix)
