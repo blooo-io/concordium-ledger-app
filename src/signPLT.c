@@ -61,7 +61,7 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
             "0x%08X\n",
             src_size,
             dst->size - dst->offset);
-        PRINTF("Buffer overflow\n");
+        PRINTF("The destination buffer is too small\n");
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy((void *)(dst->ptr + dst->offset), src, src_size);
@@ -276,22 +276,22 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         THROW(ERROR_INVALID_PARAM);
     }
 
-    PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
+    // PRINTF("\nkm-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
 
     if (!parse_tags_in_buffer(&out_buf, &tag_list)) {
         PRINTF("Error while parsing cbor tags\n");
         THROW(ERROR_INVALID_PARAM);
     }
-    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
+    if (sizeof(ctx->pltOperationDisplay) < out_buf.size + 1) {
         PRINTF("display str is too small for value %d < %d\n",
                sizeof(ctx->pltOperationDisplay),
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
     }
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
-    PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
-           ctx->pltOperationDisplay);
+    ctx->pltOperationDisplay[out_buf.size] = '\0';
+    // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
+    //        ctx->pltOperationDisplay);
 
     return true;
 }
@@ -335,6 +335,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
                ctx->tokenId);
 
         // Parse OperationLength
+        if (remainingDataLength < 4) {
+            PRINTF("Not enough data left\n");
+            THROW(ERROR_INVALID_PARAM);
+        }
         ctx->totalCborLength = U4BE(cdata, 0);
         PRINTF("km-logs [signPLT.c] (handleSignPltTransaction) - cborLength %d\n",
                ctx->totalCborLength);
