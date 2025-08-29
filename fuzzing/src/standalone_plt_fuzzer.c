@@ -686,21 +686,14 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
         PRINTF("Error while parsing cbor tags\n");
         THROW(ERROR_INVALID_PARAM);
     }
-    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
-        PRINTF("display str is too small for value %d < %d\n",
-               sizeof(ctx->pltOperationDisplay),
-               out_buf.size);
-        THROW(ERROR_BUFFER_OVERFLOW);
-    }
-    // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - out_buf.ptr: %s\n", out_buf.ptr);
-    if (sizeof(ctx->pltOperationDisplay) < out_buf.size) {
+    if (sizeof(ctx->pltOperationDisplay) < out_buf.size + 1) {
         PRINTF("display str is too small for value %d < %d\n",
                sizeof(ctx->pltOperationDisplay),
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
-    ctx->pltOperationDisplay[out_buf.size - 1] = '\0';
+    ctx->pltOperationDisplay[out_buf.size] = '\0';
     // PRINTF("km-logs - [signPLT.c] (parsePltCbor) - ctx->pltOperationDisplay: %s\n",
     //        ctx->pltOperationDisplay);
 
