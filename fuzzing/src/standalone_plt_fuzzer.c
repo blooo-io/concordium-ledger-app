@@ -118,30 +118,29 @@ static tx_state_t mock_tx_state;
 // Mock PRINTF - just use regular printf for debugging
 #define PRINTF printf
 
-// THROW macros now call abort() after printing, to simulate a real crash/exit.
-
-#define THROW(exception)                                     \
-    do {                                                     \
-        printf("THROW: 0x%x (%s)\n", exception, #exception); \
-        abort();                                             \
+// Mock THROW - instead of crashing, just return early with appropriate value
+#define THROW(exception)                                          \
+    do {                                                          \
+        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
+        return 0;                                                 \
     } while (0)
 
-#define THROW_BOOL(exception)                                \
-    do {                                                     \
-        printf("THROW: 0x%x (%s)\n", exception, #exception); \
-        abort();                                             \
+#define THROW_BOOL(exception)                                     \
+    do {                                                          \
+        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
+        return false;                                             \
     } while (0)
 
-#define THROW_CBOR_ERROR(exception)                          \
-    do {                                                     \
-        printf("THROW: 0x%x (%s)\n", exception, #exception); \
-        abort();                                             \
+#define THROW_CBOR_ERROR(exception)                               \
+    do {                                                          \
+        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
+        return CborUnknownError;                                  \
     } while (0)
 
-#define THROW_VOID(exception)                                \
-    do {                                                     \
-        printf("THROW: 0x%x (%s)\n", exception, #exception); \
-        abort();                                             \
+#define THROW_VOID(exception)                                     \
+    do {                                                          \
+        printf("MOCK THROW: 0x%x (%s)\n", exception, #exception); \
+        return;                                                   \
     } while (0)
 
 // Mock LEDGER_ASSERT - print and return on failure with appropriate value
@@ -432,7 +431,9 @@ bool cbor_read_string_or_byte_string(CborValue *it,
 
     return false;
 }
-void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
+// Since in the context of the fuzzer we can't really use THROW to exit the program, we will edit
+// this function's type from void to bool and return false if the buffer is too small.
+bool add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
     PRINTF("\nkm-logs - [standalone_plt_fuzzer.c] (add_char_array_to_buffer) - trying to add: %s\n",
            src);
     if (dst->size - dst->offset < src_size) {
@@ -443,12 +444,16 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
             (uint32_t)src_size,
             (uint32_t)(dst->size - dst->offset));
         PRINTF("The destination buffer is too small\n");
-        THROW_VOID(ERROR_BUFFER_OVERFLOW);
+        THROW_BOOL(ERROR_BUFFER_OVERFLOW);
     }
     memcpy((void *)(dst->ptr + dst->offset), src, src_size);
     dst->offset += src_size;
+    return true;
 }
 
+// Because of the changes we made to add_char_array_to_buffer, we need to edit this function
+// Now there is an if statement that checks the return value of add_char_array_to_buffer and
+// returns the appropriate error code.
 CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
     const char *temp;
     while (!cbor_value_at_end(it)) {
@@ -469,7 +474,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                     temp = "{";
                 }
                 PRINTF("%s", temp);
-                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
+                if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
+                    return CborErrorIO;
+                }
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
@@ -484,7 +491,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                     temp = "},";
                 }
                 PRINTF("%s", temp);
-                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
+                if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
+                    return CborErrorIO;
+                }
                 continue;
             }
             case CborIntegerType: {
@@ -507,7 +516,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 }
 
                 snprintf(temp3, sizeof(temp3), "Int:%s,", temp2);
-                add_char_array_to_buffer(out_buf, temp3, strlen(temp3));
+                if (!add_char_array_to_buffer(out_buf, temp3, strlen(temp3))) {
+                    return CborErrorIO;
+                }
                 break;
             }
 
@@ -521,9 +532,15 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                     PRINTF("format_hex error\n");
                     THROW_CBOR_ERROR(0x0010);
                 }
-                add_char_array_to_buffer(out_buf, (char *)"0x", 2);
-                add_char_array_to_buffer(out_buf, string_value, strlen(string_value));
-                add_char_array_to_buffer(out_buf, (char *)",", 1);
+                if (!add_char_array_to_buffer(out_buf, (char *)"0x", 2)) {
+                    return CborErrorIO;
+                }
+                if (!add_char_array_to_buffer(out_buf, string_value, strlen(string_value))) {
+                    return CborErrorIO;
+                }
+                if (!add_char_array_to_buffer(out_buf, (char *)",", 1)) {
+                    return CborErrorIO;
+                }
                 PRINTF("ByteString(%d): 0x%s\n", (int)buf_len, string_value);
                 break;
             }
@@ -538,7 +555,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 char temp2[256];
                 snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
                 PRINTF("%s", temp2);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                if (!add_char_array_to_buffer(out_buf, temp2, strlen(temp2))) {
+                    return CborErrorIO;
+                }
                 break;
             }
 
@@ -550,7 +569,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 char tag_str[32];
                 snprintf(tag_str, sizeof(tag_str), "Tag(%s):", temp2);
                 PRINTF("%s", tag_str);
-                add_char_array_to_buffer(out_buf, tag_str, strlen(tag_str));
+                if (!add_char_array_to_buffer(out_buf, tag_str, strlen(tag_str))) {
+                    return CborErrorIO;
+                }
 
                 break;
             }
@@ -565,13 +586,17 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborNullType:
                 temp = "null,";
                 PRINTF("null");
-                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
+                if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
+                    return CborErrorIO;
+                }
                 break;
 
             case CborUndefinedType:
                 temp = "undefined,";
                 PRINTF("undefined");
-                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
+                if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
+                    return CborErrorIO;
+                }
                 break;
 
             case CborBooleanType: {
@@ -579,7 +604,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 cbor_value_get_boolean(it, &val);  // can't fail
                 temp = val ? "true," : "false,";
                 PRINTF("%s", temp);
-                add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp));
+                if (!add_char_array_to_buffer(out_buf, (char *)temp, strlen(temp))) {
+                    return CborErrorIO;
+                }
                 break;
             }
 
@@ -596,7 +623,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 }
                 snprintf(temp2, sizeof(temp2), "Double:0x%08x,", (uint32_t)val);
                 PRINTF("Double: 0x%08x\n", (uint32_t)val);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                if (!add_char_array_to_buffer(out_buf, temp2, strlen(temp2))) {
+                    return CborErrorIO;
+                }
                 break;
             }
             case CborHalfFloatType: {
@@ -605,7 +634,9 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 cbor_value_get_half_float(it, &val);
                 snprintf(temp2, sizeof(temp2), "__f16(%04x),", val);
                 PRINTF("__f16(%04x)\n", val);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                if (!add_char_array_to_buffer(out_buf, temp2, strlen(temp2))) {
+                    return CborErrorIO;
+                }
                 break;
             }
 
