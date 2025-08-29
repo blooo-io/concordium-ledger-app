@@ -61,7 +61,7 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
             "0x%08X\n",
             src_size,
             dst->size - dst->offset);
-        PRINTF("Buffer overflow\n");
+        PRINTF("The destination buffer is too small\n");
         THROW(ERROR_BUFFER_OVERFLOW);
     }
     memcpy((void *)(dst->ptr + dst->offset), src, src_size);
