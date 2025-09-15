@@ -928,21 +928,57 @@ void uiUpdateContractDisplay() {
 UX_STEP_NOCB(ux_plt_operation_1_step,
              bnnn_paging,
              {.title = "Token ID", .text = (char *)global.withDataBlob.signPLTContext.tokenId});
-// Plt operation(s)
-UX_STEP_NOCB(ux_plt_operation_2_step,
+
+// Operation Type (parsed)
+UX_STEP_NOCB(ux_plt_operation_type_step,
              bnnn_paging,
-             {.title = "Plt operation(s)",
+             {.title = "Operation", .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operationType});
+
+// Amount (parsed)
+UX_STEP_NOCB(ux_plt_operation_amount_step,
+             bnnn_paging,
+             {.title = "Amount", .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.amount});
+
+// Recipient (parsed)
+UX_STEP_NOCB(ux_plt_operation_recipient_step,
+             bnnn_paging,
+             {.title = "Recipient", .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.recipient});
+
+// Fallback - Raw operation display
+UX_STEP_NOCB(ux_plt_operation_raw_step,
+             bnnn_paging,
+             {.title = "PLT Operation(s)",
               .text = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay});
-UX_FLOW(ux_plt_operation,
+
+// Parsed flow - shows individual fields
+UX_FLOW(ux_plt_operation_parsed,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
         &ux_plt_operation_1_step,
-        &ux_plt_operation_2_step,
+        &ux_plt_operation_type_step,
+        &ux_plt_operation_amount_step,
+        &ux_plt_operation_recipient_step,
+        &ux_sign_flow_shared_sign,
+        &ux_sign_flow_shared_decline);
+
+// Fallback flow - shows raw data
+UX_FLOW(ux_plt_operation_fallback,
+        &ux_sign_flow_shared_review,
+        &ux_sign_flow_account_sender_view,
+        &ux_plt_operation_1_step,
+        &ux_plt_operation_raw_step,
         &ux_sign_flow_shared_sign,
         &ux_sign_flow_shared_decline);
 
 void uiPltOperationDisplay() {
-    ux_flow_init(0, ux_plt_operation, NULL);
+    // Choose flow based on whether parsing was successful
+    if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
+        PRINTF("Using parsed PLT operation flow\n");
+        ux_flow_init(0, ux_plt_operation_parsed, NULL);
+    } else {
+        PRINTF("Using fallback PLT operation flow\n");
+        ux_flow_init(0, ux_plt_operation_fallback, NULL);
+    }
 }
 
 #endif

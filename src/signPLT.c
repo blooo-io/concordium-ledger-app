@@ -261,6 +261,141 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
     return true;
 }
 
+// Helper function to extract value between quotes or after colon
+static const char* findSubstring(const char* haystack, const char* needle) {
+    const char* pos = haystack;
+    while (*pos) {
+        const char* h = pos;
+        const char* n = needle;
+        while (*h && *n && *h == *n) {
+            h++;
+            n++;
+        }
+        if (*n == '\0') return pos;
+        pos++;
+    }
+    return NULL;
+}
+
+static bool extractFieldValue(const char* input, const char* fieldName, char* output, size_t outputSize) {
+    // Look for pattern: "fieldName":value
+    char pattern[64];
+    snprintf(pattern, sizeof(pattern), "\"%s\":", fieldName);
+    
+    const char* fieldPos = findSubstring(input, pattern);
+    if (!fieldPos) return false;
+    
+    // Move to after the pattern
+    const char* valueStart = fieldPos + strlen(pattern);
+    
+    // Skip whitespace
+    while (*valueStart == ' ') valueStart++;
+    
+    const char* valueEnd;
+    size_t copyLen;
+    
+    if (*valueStart == '"') {
+        // String value - find closing quote
+        valueStart++; // Skip opening quote
+        valueEnd = valueStart;
+        while (*valueEnd && *valueEnd != '"') valueEnd++;
+        copyLen = valueEnd - valueStart;
+    } else if (*valueStart == '{') {
+        // Object value - find matching closing brace
+        valueEnd = valueStart + 1;
+        int braceCount = 1;
+        while (*valueEnd && braceCount > 0) {
+            if (*valueEnd == '{') braceCount++;
+            else if (*valueEnd == '}') braceCount--;
+            valueEnd++;
+        }
+        copyLen = valueEnd - valueStart;
+    } else {
+        // Numeric or other value - find next comma, brace, or end
+        valueEnd = valueStart;
+        while (*valueEnd && *valueEnd != ',' && *valueEnd != '}' && *valueEnd != ']') {
+            valueEnd++;
+        }
+        copyLen = valueEnd - valueStart;
+    }
+    
+    if (copyLen >= outputSize) copyLen = outputSize - 1;
+    memcpy(output, valueStart, copyLen);
+    output[copyLen] = '\0';
+    
+    return true;
+}
+
+static bool extractRecipientAddress(const char* recipientObject, char* address, size_t addressSize) {
+    // Look for "address: " pattern in the recipient object
+    const char* addressPos = findSubstring(recipientObject, "address: ");
+    if (!addressPos) return false;
+    
+    const char* addressStart = addressPos + strlen("address: ");
+    const char* addressEnd = addressStart;
+    
+    // Find end of address (until } or end)
+    while (*addressEnd && *addressEnd != '}' && *addressEnd != ',') {
+        addressEnd++;
+    }
+    
+    size_t copyLen = addressEnd - addressStart;
+    if (copyLen >= addressSize) copyLen = addressSize - 1;
+    
+    memcpy(address, addressStart, copyLen);
+    address[copyLen] = '\0';
+    
+    return true;
+}
+
+bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t* parsed) {
+    if (!operationDisplay || !parsed) return false;
+    
+    // Initialize parsed structure
+    memset(parsed, 0, sizeof(parsedPLTOperation_t));
+    parsed->isParsed = false;
+    
+    PRINTF("Parsing PLT operation: %s\n", operationDisplay);
+    
+    // The format is: [{"operationType",{"amount":value,"recipient":{...}}}]
+    // First, find the operation type (first quoted string after opening brace)
+    const char* firstQuote = findSubstring(operationDisplay, "\"");
+    if (!firstQuote) return false;
+    
+    const char* typeStart = firstQuote + 1;
+    const char* typeEnd = typeStart;
+    while (*typeEnd && *typeEnd != '"') typeEnd++;
+    
+    size_t typeLen = typeEnd - typeStart;
+    if (typeLen >= MAX_PLT_OPERATION_TYPE) typeLen = MAX_PLT_OPERATION_TYPE - 1;
+    memcpy(parsed->operationType, typeStart, typeLen);
+    parsed->operationType[typeLen] = '\0';
+    
+    // Extract amount
+    if (!extractFieldValue(operationDisplay, "amount", parsed->amount, MAX_PLT_AMOUNT_STR)) {
+        strncpy(parsed->amount, "N/A", MAX_PLT_AMOUNT_STR - 1);
+    }
+    
+    // Extract recipient object first
+    char recipientObject[256];
+    if (extractFieldValue(operationDisplay, "recipient", recipientObject, sizeof(recipientObject))) {
+        // Extract address from the recipient object
+        if (!extractRecipientAddress(recipientObject, parsed->recipient, MAX_PLT_RECIPIENT_STR)) {
+            strncpy(parsed->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+        }
+    } else {
+        strncpy(parsed->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+    }
+    
+    parsed->isParsed = true;
+    
+    PRINTF("Parsed operation type: %s\n", parsed->operationType);
+    PRINTF("Parsed amount: %s\n", parsed->amount);
+    PRINTF("Parsed recipient: %s\n", parsed->recipient);
+    
+    return true;
+}
+
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more
                               //   bool isInitialCall
 ) {
@@ -329,6 +464,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
                 PRINTF("Cbor parsing failed\n");
                 THROW(ERROR_INVALID_PARAM);
             }
+            
+            // Parse the operation for improved UI display
+            parsePLTOperationForUI(ctx->pltOperationDisplay, &ctx->parsedOperation);
+            
             uiPltOperationDisplay();
         } else {
             PRINTF("Cbor received is not complete, %d < %d\n",

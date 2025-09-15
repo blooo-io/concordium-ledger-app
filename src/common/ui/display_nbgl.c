@@ -1239,9 +1239,36 @@ void uiPltOperationDisplay(void) {
     pairs[pairIndex].item = "Token ID";
     pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.tokenId;
     pairIndex++;
-    pairs[pairIndex].item = "PLT Operation(s)";
-    pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
-    pairIndex++;
+
+    // Use parsed operation data if available, otherwise fall back to raw display
+    if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
+        pairs[pairIndex].item = "Operation";
+        pairs[pairIndex].value =
+            (char *)global.withDataBlob.signPLTContext.parsedOperation.operationType;
+        pairIndex++;
+
+        pairs[pairIndex].item = "Amount";
+        pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.parsedOperation.amount;
+        pairIndex++;
+
+        pairs[pairIndex].item = "Recipient";
+        pairs[pairIndex].value =
+            (char *)global.withDataBlob.signPLTContext.parsedOperation.recipient;
+        pairIndex++;
+
+        PRINTF("Displaying parsed PLT operation - Type: %s, Amount: %s, Recipient: %s\n",
+               global.withDataBlob.signPLTContext.parsedOperation.operationType,
+               global.withDataBlob.signPLTContext.parsedOperation.amount,
+               global.withDataBlob.signPLTContext.parsedOperation.recipient);
+    } else {
+        // Fallback to raw display
+        pairs[pairIndex].item = "PLT Operation(s)";
+        pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
+        pairIndex++;
+        PRINTF("Using fallback display - pltOperationDisplay: %s\n",
+               global.withDataBlob.signPLTContext.pltOperationDisplay);
+    }
+
     // Create the page content
     nbgl_contentTagValueList_t content;
     content.nbPairs = pairIndex;
@@ -1249,6 +1276,7 @@ void uiPltOperationDisplay(void) {
     content.smallCaseForValue = false;
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
+
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
