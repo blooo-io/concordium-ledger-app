@@ -13,6 +13,8 @@
 #define MAX_PLT_OPERATION_TYPE      32
 #define MAX_PLT_AMOUNT_STR          32
 #define MAX_PLT_RECIPIENT_STR       128
+#define MAX_PLT_OPERATIONS          10
+#define MAX_PLT_SUMMARY_STR         64
 
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more);
 
@@ -20,6 +22,11 @@ typedef struct {
     char operationType[MAX_PLT_OPERATION_TYPE];
     char amount[MAX_PLT_AMOUNT_STR];
     char recipient[MAX_PLT_RECIPIENT_STR];
+} singlePLTOperation_t;
+
+typedef struct {
+    singlePLTOperation_t operations[MAX_PLT_OPERATIONS];
+    uint8_t operationCount;
     bool isParsed;
 } parsedPLTOperation_t;
 

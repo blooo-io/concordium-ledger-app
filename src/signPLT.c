@@ -49,13 +49,13 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
             src_size,
             dst->size - dst->offset);
         PRINTF("The destination buffer is too small\n");
-        THROW(ERROR_BUFFER_OVERFLOW);
+        THROW(ERROR_PLT_BUFFER_ERROR);
     }
     memcpy((void *)(dst->ptr + dst->offset), src, src_size);
     dst->offset += src_size;
 }
 
-CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
+CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
     const char *temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
@@ -78,7 +78,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
-                err = decodeCborRecursive(&recursed, nestingLevel + 1, out_buf);
+                err = decode_cbor_recursive(&recursed, nestingLevel + 1, out_buf);
                 if (err) return err;  // parse error
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;  // parse error
@@ -124,7 +124,7 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
                 char string_value[100] = {0};
                 if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
                     PRINTF("format_hex error\n");
-                    THROW(0x0010);
+                    THROW(ERROR_PLT_CBOR_ERROR);
                 }
                 add_char_array_to_buffer(out_buf, (char *)"0x", 2);
                 add_char_array_to_buffer(out_buf, string_value, strlen(string_value));
@@ -191,19 +191,13 @@ CborError decodeCborRecursive(CborValue *it, int nestingLevel, buffer_t *out_buf
             case CborDoubleType: {
                 double val;
                 char temp2[32];
-                if (false) {
-                    float f;
-                    case CborFloatType:
-                        cbor_value_get_float(it, &f);
-                        val = f;
-                } else {
-                    cbor_value_get_double(it, &val);
-                }
+                cbor_value_get_double(it, &val);
                 snprintf(temp2, sizeof(temp2), "Double:0x%08x,", (uint32_t)val);
                 PRINTF("Double: 0x%08x\n", (uint32_t)val);
                 add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
                 break;
             }
+
             case CborHalfFloatType: {
                 uint16_t val;
                 char temp2[16];
@@ -239,21 +233,21 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
     char temp[MAX_PLT_DIPLAY_STR] = {0};
     buffer_t out_buf = {.ptr = (const uint8_t *)temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
     tag_list_t tag_list;  // initiate an empty tag_list_t
-    err = decodeCborRecursive(&it, 0, &out_buf);
+    err = decode_cbor_recursive(&it, 0, &out_buf);
     if (err) {
         PRINTF("Error while decoding cbor\n");
-        THROW(ERROR_INVALID_PARAM);
+        THROW(ERROR_PLT_CBOR_ERROR);
     }
 
     if (!parse_tags_in_buffer(&out_buf, &tag_list)) {
         PRINTF("Error while parsing cbor tags\n");
-        THROW(ERROR_INVALID_PARAM);
+        THROW(ERROR_PLT_CBOR_ERROR);
     }
     if (sizeof(ctx->pltOperationDisplay) < out_buf.size + 1) {
         PRINTF("display str is too small for value %d < %d\n",
                sizeof(ctx->pltOperationDisplay),
                out_buf.size);
-        THROW(ERROR_BUFFER_OVERFLOW);
+        THROW(ERROR_PLT_BUFFER_ERROR);
     }
     memcpy(ctx->pltOperationDisplay, out_buf.ptr, out_buf.size);
     ctx->pltOperationDisplay[out_buf.size] = '\0';
@@ -277,26 +271,29 @@ static const char* findSubstring(const char* haystack, const char* needle) {
     return NULL;
 }
 
-static bool extractFieldValue(const char* input, const char* fieldName, char* output, size_t outputSize) {
+static bool extractFieldValue(const char* input,
+                              const char* fieldName,
+                              char* output,
+                              size_t outputSize) {
     // Look for pattern: "fieldName":value
     char pattern[64];
     snprintf(pattern, sizeof(pattern), "\"%s\":", fieldName);
-    
+
     const char* fieldPos = findSubstring(input, pattern);
     if (!fieldPos) return false;
-    
+
     // Move to after the pattern
     const char* valueStart = fieldPos + strlen(pattern);
-    
+
     // Skip whitespace
     while (*valueStart == ' ') valueStart++;
-    
+
     const char* valueEnd;
     size_t copyLen;
-    
+
     if (*valueStart == '"') {
         // String value - find closing quote
-        valueStart++; // Skip opening quote
+        valueStart++;  // Skip opening quote
         valueEnd = valueStart;
         while (*valueEnd && *valueEnd != '"') valueEnd++;
         copyLen = valueEnd - valueStart;
@@ -305,8 +302,10 @@ static bool extractFieldValue(const char* input, const char* fieldName, char* ou
         valueEnd = valueStart + 1;
         int braceCount = 1;
         while (*valueEnd && braceCount > 0) {
-            if (*valueEnd == '{') braceCount++;
-            else if (*valueEnd == '}') braceCount--;
+            if (*valueEnd == '{')
+                braceCount++;
+            else if (*valueEnd == '}')
+                braceCount--;
             valueEnd++;
         }
         copyLen = valueEnd - valueStart;
@@ -318,84 +317,200 @@ static bool extractFieldValue(const char* input, const char* fieldName, char* ou
         }
         copyLen = valueEnd - valueStart;
     }
-    
+
     if (copyLen >= outputSize) copyLen = outputSize - 1;
     memcpy(output, valueStart, copyLen);
     output[copyLen] = '\0';
-    
+
     return true;
 }
 
-static bool extractRecipientAddress(const char* recipientObject, char* address, size_t addressSize) {
+static bool extractRecipientAddress(const char* recipientObject,
+                                    char* address,
+                                    size_t addressSize) {
     // Look for "address: " pattern in the recipient object
     const char* addressPos = findSubstring(recipientObject, "address: ");
     if (!addressPos) return false;
-    
+
     const char* addressStart = addressPos + strlen("address: ");
     const char* addressEnd = addressStart;
-    
+
     // Find end of address (until } or end)
     while (*addressEnd && *addressEnd != '}' && *addressEnd != ',') {
         addressEnd++;
     }
-    
+
     size_t copyLen = addressEnd - addressStart;
     if (copyLen >= addressSize) copyLen = addressSize - 1;
-    
+
     memcpy(address, addressStart, copyLen);
     address[copyLen] = '\0';
-    
+
     return true;
 }
 
-bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t* parsed) {
-    if (!operationDisplay || !parsed) return false;
-    
-    // Initialize parsed structure
-    memset(parsed, 0, sizeof(parsedPLTOperation_t));
-    parsed->isParsed = false;
-    
-    PRINTF("Parsing PLT operation: %s\n", operationDisplay);
-    
-    // The format is: [{"operationType",{"amount":value,"recipient":{...}}}]
-    // First, find the operation type (first quoted string after opening brace)
-    const char* firstQuote = findSubstring(operationDisplay, "\"");
+static bool parseSingleOperation(const char* operationStr, singlePLTOperation_t* operation) {
+    if (!operationStr || !operation) return false;
+
+    // Find the operation type (first quoted string after opening brace)
+    const char* firstQuote = findSubstring(operationStr, "\"");
     if (!firstQuote) return false;
-    
+
     const char* typeStart = firstQuote + 1;
     const char* typeEnd = typeStart;
     while (*typeEnd && *typeEnd != '"') typeEnd++;
-    
+
     size_t typeLen = typeEnd - typeStart;
     if (typeLen >= MAX_PLT_OPERATION_TYPE) typeLen = MAX_PLT_OPERATION_TYPE - 1;
-    memcpy(parsed->operationType, typeStart, typeLen);
-    parsed->operationType[typeLen] = '\0';
-    
+    memcpy(operation->operationType, typeStart, typeLen);
+    operation->operationType[typeLen] = '\0';
+
     // Extract amount
-    if (!extractFieldValue(operationDisplay, "amount", parsed->amount, MAX_PLT_AMOUNT_STR)) {
-        strncpy(parsed->amount, "N/A", MAX_PLT_AMOUNT_STR - 1);
+    if (!extractFieldValue(operationStr, "amount", operation->amount, MAX_PLT_AMOUNT_STR)) {
+        strncpy(operation->amount, "N/A", MAX_PLT_AMOUNT_STR - 1);
     }
-    
+
     // Extract recipient object first
     char recipientObject[256];
-    if (extractFieldValue(operationDisplay, "recipient", recipientObject, sizeof(recipientObject))) {
+    if (extractFieldValue(operationStr, "recipient", recipientObject, sizeof(recipientObject))) {
         // Extract address from the recipient object
-        if (!extractRecipientAddress(recipientObject, parsed->recipient, MAX_PLT_RECIPIENT_STR)) {
-            strncpy(parsed->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+        if (!extractRecipientAddress(recipientObject,
+                                     operation->recipient,
+                                     MAX_PLT_RECIPIENT_STR)) {
+            strncpy(operation->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
         }
     } else {
-        strncpy(parsed->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+        strncpy(operation->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
     }
-    
-    parsed->isParsed = true;
-    
-    PRINTF("Parsed operation type: %s\n", parsed->operationType);
-    PRINTF("Parsed amount: %s\n", parsed->amount);
-    PRINTF("Parsed recipient: %s\n", parsed->recipient);
-    
+
     return true;
 }
 
+bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t *parsed) {
+    if (!operationDisplay || !parsed) return false;
+
+    // Initialize parsed structure
+    memset(parsed, 0, sizeof(parsedPLTOperation_t));
+    parsed->isParsed = false;
+
+    PRINTF("Parsing PLT operation: %s\n", operationDisplay);
+
+    // Count operations by counting opening braces after the initial '['
+    const char* pos = operationDisplay;
+    uint8_t operationCount = 0;
+
+    // Skip initial '['
+    while (*pos && *pos != '[') pos++;
+    if (*pos == '[') pos++;
+
+    // Find each operation (starts with '{')
+    while (*pos && operationCount < MAX_PLT_OPERATIONS) {
+        // Skip whitespace and commas
+        while (*pos && (*pos == ' ' || *pos == ',' || *pos == '\n')) pos++;
+
+        if (*pos == '{') {
+            // Found start of an operation, find the end
+            const char* opStart = pos;
+            int braceCount = 1;
+            pos++;  // Skip opening brace
+
+            while (*pos && braceCount > 0) {
+                if (*pos == '{')
+                    braceCount++;
+                else if (*pos == '}')
+                    braceCount--;
+                pos++;
+            }
+
+            if (braceCount == 0) {
+                // Extract this operation string
+                size_t opLen = pos - opStart;
+                char opStr[512];
+                if (opLen < sizeof(opStr)) {
+                    memcpy(opStr, opStart, opLen);
+                    opStr[opLen] = '\0';
+
+                    // Parse this single operation
+                    if (parseSingleOperation(opStr, &parsed->operations[operationCount])) {
+                        PRINTF("Parsed operation %d: Type=%s, Amount=%s, Recipient=%s\n",
+                               operationCount + 1,
+                               parsed->operations[operationCount].operationType,
+                               parsed->operations[operationCount].amount,
+                               parsed->operations[operationCount].recipient);
+                        operationCount++;
+                    }
+                }
+            }
+        } else if (*pos == ']') {
+            // End of array
+            break;
+        } else {
+            pos++;
+        }
+    }
+
+    parsed->operationCount = operationCount;
+
+    if (operationCount == 0) {
+        return false;
+    }
+
+    parsed->isParsed = true;
+
+    PRINTF("Successfully parsed %d operations\n", operationCount);
+
+    return true;
+}
+
+/**
+ * @brief Handle Protected Ledger Transaction (PLT) signing operations
+ *
+ * This function processes PLT transactions which can be sent in multiple chunks due to 
+ * APDU size limitations. The transaction contains a token ID and CBOR-encoded operation data
+ * that gets parsed and displayed to the user for approval.
+ *
+ * Protocol flow:
+ * 1. Initial chunk (chunk=0): Contains transaction header, token ID, and CBOR length
+ * 2. Subsequent chunks: Contains CBOR operation data until complete
+ * 3. Final processing: Parse CBOR, generate UI display, and show to user
+ *
+ * @param cdata Pointer to command data buffer
+ * @param lc    Length of command data (APDU data length)
+ * @param chunk Chunk number (0 for initial chunk, incremented for subsequent chunks)
+ * @param more  Flag indicating if more chunks are expected (true) or this is the last chunk (false)
+ *
+ * Initial chunk (chunk=0) data format:
+ * - path_length (1 byte)
+ * - derivation_path (path_length * 4 bytes)
+ * - account_transaction_header (60 bytes) 
+ * - transaction_kind (1 byte) - must be PLT_TRANSACTION (27)
+ * - token_id_length (1 byte) - length of token ID (1-255)
+ * - token_id (token_id_length bytes) - token identifier
+ * - cbor_length (4 bytes, big-endian) - total length of CBOR data
+ * - cbor_data (remaining bytes) - start of CBOR operation data
+ *
+ * Subsequent chunks data format:
+ * - cbor_data (lc bytes) - continuation of CBOR operation data
+ *
+ * Constraints:
+ * - Maximum token ID length: 255 bytes (MAX_TOKEN_ID_LENGTH)
+ * - Maximum CBOR data length: 900 bytes (MAX_CBOR_LENGTH)
+ * - CBOR data must be valid according to CBOR specification
+ * - Total display string length must not exceed 2000 bytes (MAX_PLT_DIPLAY_STR)
+ *
+ * Error conditions:
+ * - ERROR_PLT_DATA_ERROR: Insufficient data, incomplete CBOR, or validation failures
+ * - ERROR_PLT_BUFFER_ERROR: Buffer overflow, CBOR too large, or chunk size exceeded
+ * - ERROR_PLT_CBOR_ERROR: CBOR parsing failures, tag parsing errors, or format issues
+ *
+ * @throws ERROR_PLT_DATA_ERROR If data validation fails or insufficient data provided
+ * @throws ERROR_PLT_BUFFER_ERROR If buffer overflow occurs or data exceeds limits
+ * @throws ERROR_PLT_CBOR_ERROR If CBOR parsing or processing fails
+ *
+ * @note This function updates global context (signPLTContext_t) and transaction state
+ * @note User approval is required via UI display before transaction completion
+ * @note All sensitive data is cleared from memory on error conditions
+ */
 void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more
                               //   bool isInitialCall
 ) {
@@ -420,7 +535,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
 
         if (remainingDataLength < ctx->tokenIdLength) {
             PRINTF("Not enough data left\n");
-            THROW(ERROR_INVALID_PARAM);
+            THROW(ERROR_PLT_DATA_ERROR);
         }
         memcpy(ctx->tokenId, cdata, ctx->tokenIdLength);
         cdata += ctx->tokenIdLength;
@@ -429,7 +544,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         // Parse OperationLength
         if (remainingDataLength < 4) {
             PRINTF("Not enough data left\n");
-            THROW(ERROR_INVALID_PARAM);
+            THROW(ERROR_PLT_DATA_ERROR);
         }
         ctx->totalCborLength = U4BE(cdata, 0);
         cdata += 4;
@@ -440,7 +555,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             PRINTF("Cbor buffer is too small to contain the complete cbor, %d > %d\n",
                    ctx->totalCborLength,
                    sizeof(ctx->cbor));
-            THROW(ERROR_BUFFER_OVERFLOW);
+            THROW(ERROR_PLT_BUFFER_ERROR);
         }
     }
 
@@ -449,7 +564,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         PRINTF("Cbor received is larger than the buffer, %d > %d\n",
                remainingDataLength,
                sizeof(ctx->cbor) - ctx->currentCborLength);
-        THROW(ERROR_BUFFER_OVERFLOW);
+        THROW(ERROR_PLT_BUFFER_ERROR);
     }
     memcpy(ctx->cbor + ctx->currentCborLength, cdata, remainingDataLength);
     ctx->currentCborLength += remainingDataLength;
@@ -462,18 +577,18 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
             // Parse the cbor
             if (!parsePltCbor(ctx->cbor, ctx->totalCborLength)) {
                 PRINTF("Cbor parsing failed\n");
-                THROW(ERROR_INVALID_PARAM);
+                THROW(ERROR_PLT_CBOR_ERROR);
             }
-            
+
             // Parse the operation for improved UI display
             parsePLTOperationForUI(ctx->pltOperationDisplay, &ctx->parsedOperation);
-            
+
             uiPltOperationDisplay();
         } else {
             PRINTF("Cbor received is not complete, %d < %d\n",
                    ctx->currentCborLength,
                    ctx->totalCborLength);
-            THROW(ERROR_INVALID_STATE);
+            THROW(ERROR_PLT_DATA_ERROR);
         }
     }
 }

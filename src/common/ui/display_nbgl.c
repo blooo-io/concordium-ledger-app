@@ -2,7 +2,7 @@
 #include "globals.h"
 
 accountSender_t global_account_sender;
-static nbgl_contentTagValue_t pairs[10];
+static nbgl_contentTagValue_t pairs[32];  // Increased to handle multiple PLT operations
 static signTransferWithScheduleContext_t *ctx_sign_transfer_with_schedule =
     &global.withDataBlob.signTransferWithScheduleContext;
 
@@ -1242,24 +1242,50 @@ void uiPltOperationDisplay(void) {
 
     // Use parsed operation data if available, otherwise fall back to raw display
     if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
-        pairs[pairIndex].item = "Operation";
-        pairs[pairIndex].value =
-            (char *)global.withDataBlob.signPLTContext.parsedOperation.operationType;
-        pairIndex++;
+        // Static buffers for dynamic labels
+        static char opTitles[MAX_PLT_OPERATIONS][32];
+        static char amountTitles[MAX_PLT_OPERATIONS][32];
+        static char recipientTitles[MAX_PLT_OPERATIONS][32];
+        
+        // Display each operation individually
+        uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
+        
+        for (uint8_t i = 0; i < opCount && pairIndex < 32 - 3; i++) {
+            // Operation type with index
+            if (opCount == 1) {
+                snprintf(opTitles[i], sizeof(opTitles[i]), "Operation");
+            } else {
+                snprintf(opTitles[i], sizeof(opTitles[i]), "Operation %d", i + 1);
+            }
+            pairs[pairIndex].item = opTitles[i];
+            pairs[pairIndex].value = 
+                (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].operationType;
+            pairIndex++;
 
-        pairs[pairIndex].item = "Amount";
-        pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.parsedOperation.amount;
-        pairIndex++;
+            // Amount with index
+            if (opCount == 1) {
+                snprintf(amountTitles[i], sizeof(amountTitles[i]), "Amount");
+            } else {
+                snprintf(amountTitles[i], sizeof(amountTitles[i]), "Amount %d", i + 1);
+            }
+            pairs[pairIndex].item = amountTitles[i];
+            pairs[pairIndex].value = 
+                (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].amount;
+            pairIndex++;
 
-        pairs[pairIndex].item = "Recipient";
-        pairs[pairIndex].value =
-            (char *)global.withDataBlob.signPLTContext.parsedOperation.recipient;
-        pairIndex++;
+            // Recipient with index
+            if (opCount == 1) {
+                snprintf(recipientTitles[i], sizeof(recipientTitles[i]), "Recipient");
+            } else {
+                snprintf(recipientTitles[i], sizeof(recipientTitles[i]), "Recipient %d", i + 1);
+            }
+            pairs[pairIndex].item = recipientTitles[i];
+            pairs[pairIndex].value = 
+                (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].recipient;
+            pairIndex++;
+        }
 
-        PRINTF("Displaying parsed PLT operation - Type: %s, Amount: %s, Recipient: %s\n",
-               global.withDataBlob.signPLTContext.parsedOperation.operationType,
-               global.withDataBlob.signPLTContext.parsedOperation.amount,
-               global.withDataBlob.signPLTContext.parsedOperation.recipient);
+        PRINTF("Displaying %d individual PLT operations\n", opCount);
     } else {
         // Fallback to raw display
         pairs[pairIndex].item = "PLT Operation(s)";

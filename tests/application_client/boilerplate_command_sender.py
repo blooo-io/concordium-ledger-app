@@ -116,6 +116,11 @@ class InsType(IntEnum):
 
 
 class Errors(IntEnum):
+    # Success code
+    SW_SUCCESS = 0x9000
+    
+    # APDU Protocol Errors
+    SW_NO_APDU_RECEIVED = 0x6982
     SW_DENY = 0x6985
     SW_WRONG_P1P2 = 0x6A86
     SW_WRONG_DATA_LENGTH = 0x6A87
@@ -130,6 +135,28 @@ class Errors(IntEnum):
     SW_TX_HASH_FAIL = 0xB006
     SW_BAD_STATE = 0xB007
     SW_SIGNATURE_FAIL = 0xB008
+    
+    # Transaction and Parameter Errors
+    SW_INVALID_STATE = 0x6B01
+    SW_INVALID_PATH = 0x6B02
+    SW_INVALID_PARAM = 0x6B03
+    SW_INVALID_TRANSACTION = 0x6B04
+    SW_UNSUPPORTED_CBOR = 0x6B05
+    SW_BUFFER_OVERFLOW = 0x6B06
+    SW_FAILED_CX_OPERATION = 0x6B07
+    SW_INVALID_SOURCE_LENGTH = 0x6B08
+    SW_INVALID_MODULE_REF = 0x6B09
+    SW_INVALID_NAME_LENGTH = 0x6B0A
+    SW_INVALID_PARAMS_LENGTH = 0x6B0B
+    SW_INVALID_COININFO = 0x6B0C
+    
+    # PLT-specific error codes
+    SW_PLT_CBOR_ERROR = 0x6B0D
+    SW_PLT_BUFFER_ERROR = 0x6B0E
+    SW_PLT_DATA_ERROR = 0x6B0F
+    
+    # Device State Errors
+    SW_DEVICE_LOCKED = 0x530C    
 
 
 # pylint: disable=too-many-public-methods
@@ -1257,7 +1284,7 @@ class BoilerplateCommandSender:
         transaction = data + transaction
         transaction_chunks = split_message(transaction, MAX_APDU_LEN)
         print(
-            "km-logs [test] (sign_plt_transaction) - numOfChunks:",
+            "[boilerplate_command_sender.py] (sign_plt_transaction) - numOfChunks:",
             len(transaction_chunks),
         )
         for chunk in transaction_chunks[:-1]:
