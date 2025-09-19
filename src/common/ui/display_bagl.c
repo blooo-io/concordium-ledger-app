@@ -925,15 +925,15 @@ void uiUpdateContractDisplay() {
 }
 
 // Token ID
-UX_STEP_NOCB(ux_plt_operation_1_step,
+UX_STEP_NOCB(ux_plt_token_id_step,
              bnnn_paging,
              {.title = "Token ID", .text = (char *)global.withDataBlob.signPLTContext.tokenId});
 
-// Dynamic content buffers for individual operation screens
-static char plt_operation_titles[MAX_PLT_OPERATIONS][32];
-static char plt_amount_titles[MAX_PLT_OPERATIONS][32];
-static char plt_recipient_titles[MAX_PLT_OPERATIONS][32];
-static char plt_target_titles[MAX_PLT_OPERATIONS][32];
+// Dynamic content buffers for individual operation screens - reduced size for memory efficiency
+static char plt_operation_titles[5][32];  // Only allocate for max 5 operations (structured display limit)
+static char plt_amount_titles[5][32];
+static char plt_recipient_titles[5][32];
+static char plt_target_titles[5][32];
 
 
 // Individual operation screens (dynamically populated)
@@ -1052,7 +1052,7 @@ UX_STEP_NOCB(ux_plt_operation_raw_step,
 UX_FLOW(ux_plt_flow_1_op,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_op1_type_step,
         &ux_plt_op1_amount_step,
         &ux_plt_op1_recipient_step,
@@ -1062,7 +1062,7 @@ UX_FLOW(ux_plt_flow_1_op,
 UX_FLOW(ux_plt_flow_2_ops,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_op1_type_step,
         &ux_plt_op1_amount_step,
         &ux_plt_op1_recipient_step,
@@ -1075,7 +1075,7 @@ UX_FLOW(ux_plt_flow_2_ops,
 UX_FLOW(ux_plt_flow_3_ops,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_op1_type_step,
         &ux_plt_op1_amount_step,
         &ux_plt_op1_recipient_step,
@@ -1091,7 +1091,7 @@ UX_FLOW(ux_plt_flow_3_ops,
 UX_FLOW(ux_plt_flow_4_ops,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_op1_type_step,
         &ux_plt_op1_amount_step,
         &ux_plt_op1_recipient_step,
@@ -1110,7 +1110,7 @@ UX_FLOW(ux_plt_flow_4_ops,
 UX_FLOW(ux_plt_flow_5_ops,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_op1_type_step,
         &ux_plt_op1_amount_step,
         &ux_plt_op1_recipient_step,
@@ -1129,22 +1129,11 @@ UX_FLOW(ux_plt_flow_5_ops,
         &ux_sign_flow_shared_sign,
         &ux_sign_flow_shared_decline);
 
-// Legacy parsed flow for compatibility
-UX_FLOW(ux_plt_operation_parsed,
-        &ux_sign_flow_shared_review,
-        &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
-        &ux_plt_op1_type_step,
-        &ux_plt_op1_amount_step,
-        &ux_plt_op1_recipient_step,
-        &ux_sign_flow_shared_sign,
-        &ux_sign_flow_shared_decline);
-
 // Fallback flow - shows raw data
 UX_FLOW(ux_plt_operation_fallback,
         &ux_sign_flow_shared_review,
         &ux_sign_flow_account_sender_view,
-        &ux_plt_operation_1_step,
+        &ux_plt_token_id_step,
         &ux_plt_operation_raw_step,
         &ux_sign_flow_shared_sign,
         &ux_sign_flow_shared_decline);
@@ -1152,34 +1141,26 @@ UX_FLOW(ux_plt_operation_fallback,
 static void preparePLTTitles() {
     uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
 
-    for (uint8_t i = 0; i < opCount && i < MAX_PLT_OPERATIONS; i++) {
+    // Only prepare titles for structured display (max 5 operations)
+    for (uint8_t i = 0; i < opCount && i < 5; i++) {
         if (opCount == 1) {
             // Single operation - simpler titles
-            snprintf(plt_operation_titles[i], sizeof(plt_operation_titles[i]), "Operation");
-            snprintf(plt_amount_titles[i], sizeof(plt_amount_titles[i]), "Amount");
-            snprintf(plt_recipient_titles[i], sizeof(plt_recipient_titles[i]), "Recipient");
-            snprintf(plt_target_titles[i], sizeof(plt_target_titles[i]), "Target");
+            snprintf(plt_operation_titles[i], 32, "Operation");
+            snprintf(plt_amount_titles[i], 32, "Amount");
+            snprintf(plt_recipient_titles[i], 32, "Recipient");
+            snprintf(plt_target_titles[i], 32, "Target");
         } else {
             // Multiple operations - numbered titles
-            snprintf(plt_operation_titles[i],
-                     sizeof(plt_operation_titles[i]),
-                     "Operation %d",
-                     i + 1);
-            snprintf(plt_amount_titles[i], sizeof(plt_amount_titles[i]), "Amount %d", i + 1);
-            snprintf(plt_recipient_titles[i],
-                     sizeof(plt_recipient_titles[i]),
-                     "Recipient %d",
-                     i + 1);
-            snprintf(plt_target_titles[i],
-                     sizeof(plt_target_titles[i]),
-                     "Target %d",
-                     i + 1);
+            snprintf(plt_operation_titles[i], 32, "Operation %d", i + 1);
+            snprintf(plt_amount_titles[i], 32, "Amount %d", i + 1);
+            snprintf(plt_recipient_titles[i], 32, "Recipient %d", i + 1);
+            snprintf(plt_target_titles[i], 32, "Target %d", i + 1);
         }
     }
 }
 
 // Dynamic flow array for building PLT operation flows at runtime
-static const ux_flow_step_t* dynamic_plt_flow[32];
+static const ux_flow_step_t* dynamic_plt_flow[24];
 
 static void buildDynamicPltFlow() {
     uint8_t step_index = 0;
@@ -1188,7 +1169,7 @@ static void buildDynamicPltFlow() {
     // Start with review and sender
     dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_review;
     dynamic_plt_flow[step_index++] = &ux_sign_flow_account_sender_view;
-    dynamic_plt_flow[step_index++] = &ux_plt_operation_1_step;  // Token ID
+    dynamic_plt_flow[step_index++] = &ux_plt_token_id_step;  // Token ID
     
     // Add steps for each operation based on available fields
     for (uint8_t i = 0; i < opCount && i < 5 && step_index < 29; i++) {
