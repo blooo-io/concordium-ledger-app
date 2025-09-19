@@ -930,7 +930,8 @@ UX_STEP_NOCB(ux_plt_token_id_step,
              {.title = "Token ID", .text = (char *)global.withDataBlob.signPLTContext.tokenId});
 
 // Dynamic content buffers for individual operation screens - reduced size for memory efficiency
-static char plt_operation_titles[5][32];  // Only allocate for max 5 operations (structured display limit)
+// Only allocate for max 5 operations (structured display limit)
+static char plt_operation_titles[5][32];
 static char plt_amount_titles[5][32];
 static char plt_recipient_titles[5][32];
 static char plt_target_titles[5][32];

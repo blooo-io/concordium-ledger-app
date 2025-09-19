@@ -1243,11 +1243,13 @@ void uiPltOperationDisplay(void) {
     // Use parsed operation data if available, otherwise fall back to raw display
     if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
         uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
+
         
         // For NBGL, support structured display for up to 10 operations
         // For more operations, fall back to JSON display for better user experience
         if (opCount > 10) {
-            PRINTF("Too many operations (%d) for individual display, using JSON fallback\n", opCount);
+            PRINTF("Too many operations (%d) for individual display, using JSON fallback\n",
+                   opCount);
             pairs[pairIndex].item = "PLT Operation(s)";
             pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
             pairIndex++;
@@ -1256,8 +1258,9 @@ void uiPltOperationDisplay(void) {
             static char amountTitles[MAX_PLT_OPERATIONS][32];
             static char recipientTitles[MAX_PLT_OPERATIONS][32];
             static char targetTitles[MAX_PLT_OPERATIONS][32];
-            
+
             // Display each operation individually
+
             
             for (uint8_t i = 0; i < opCount && i < MAX_PLT_OPERATIONS; i++) {
                 // Operation type - always shown
@@ -1268,59 +1271,91 @@ void uiPltOperationDisplay(void) {
                 }
                 if (pairIndex < 32) {
                     pairs[pairIndex].item = opTitles[i];
-                    pairs[pairIndex].value = 
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].operationType;
+                    pairs[pairIndex].value =
+                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                            .operationType;
                     pairIndex++;
                 } else {
                     PRINTF("Pairs array full, skipping remaining operations\n");
                     break;
                 }
                 PRINTF("--------------------------------\n");
-                PRINTF("Available fields: %d\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields);
-                PRINTF("Match PLT_FIELD_AMOUNT: %d\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_AMOUNT);
-                PRINTF("Match PLT_FIELD_RECIPIENT: %d\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_RECIPIENT);
-                PRINTF("Match PLT_FIELD_TARGET: %d\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_TARGET);
-                PRINTF("Operation type: %s\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].operationType);
-                PRINTF("Amount: %s\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].amount);
-                PRINTF("Recipient: %s\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].recipient);
-                PRINTF("Target: %s\n", global.withDataBlob.signPLTContext.parsedOperation.operations[i].target);
+                PRINTF("Available fields: %d\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                           .availableFields);
+                PRINTF("Match PLT_FIELD_AMOUNT: %d\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                               .availableFields &
+                           PLT_FIELD_AMOUNT);
+                PRINTF("Match PLT_FIELD_RECIPIENT: %d\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                               .availableFields &
+                           PLT_FIELD_RECIPIENT);
+                PRINTF("Match PLT_FIELD_TARGET: %d\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                               .availableFields &
+                           PLT_FIELD_TARGET);
+                PRINTF(
+                    "Operation type: %s\n",
+                    global.withDataBlob.signPLTContext.parsedOperation.operations[i].operationType);
+                PRINTF("Amount: %s\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i].amount);
+                PRINTF("Recipient: %s\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i].recipient);
+                PRINTF("Target: %s\n",
+                       global.withDataBlob.signPLTContext.parsedOperation.operations[i].target);
                 PRINTF("--------------------------------\n");
                 // Amount field - only if available
-                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_AMOUNT) && pairIndex < 32) {
+                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                         .availableFields &
+                     PLT_FIELD_AMOUNT) &&
+                    pairIndex < 32) {
                     if (opCount == 1) {
                         snprintf(amountTitles[i], sizeof(amountTitles[i]), "Amount");
                     } else {
                         snprintf(amountTitles[i], sizeof(amountTitles[i]), "Amount %d", i + 1);
                     }
                     pairs[pairIndex].item = amountTitles[i];
-                    pairs[pairIndex].value = 
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].amount;
+                    pairs[pairIndex].value =
+                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                            .amount;
                     pairIndex++;
                 }
 
                 // Recipient field - only if available
-                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_RECIPIENT) && pairIndex < 32) {
+                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                         .availableFields &
+                     PLT_FIELD_RECIPIENT) &&
+                    pairIndex < 32) {
                     if (opCount == 1) {
                         snprintf(recipientTitles[i], sizeof(recipientTitles[i]), "Recipient");
                     } else {
-                        snprintf(recipientTitles[i], sizeof(recipientTitles[i]), "Recipient %d", i + 1);
+                        snprintf(recipientTitles[i],
+                                 sizeof(recipientTitles[i]),
+                                 "Recipient %d",
+                                 i + 1);
                     }
                     pairs[pairIndex].item = recipientTitles[i];
-                    pairs[pairIndex].value = 
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].recipient;
+                    pairs[pairIndex].value =
+                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                            .recipient;
                     pairIndex++;
                 }
 
                 // Target field - only if available
-                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields & PLT_FIELD_TARGET) && pairIndex < 32) {
+                if ((global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                         .availableFields &
+                     PLT_FIELD_TARGET) &&
+                    pairIndex < 32) {
                     if (opCount == 1) {
                         snprintf(targetTitles[i], sizeof(targetTitles[i]), "Target");
                     } else {
                         snprintf(targetTitles[i], sizeof(targetTitles[i]), "Target %d", i + 1);
                     }
                     pairs[pairIndex].item = targetTitles[i];
-                    pairs[pairIndex].value = 
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i].target;
+                    pairs[pairIndex].value =
+                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                            .target;
                     pairIndex++;
                 }
             }

@@ -354,10 +354,7 @@ bool parse_tag_40307(tag_info_t* tag) {
     base58_address[50] = '\0';
 
     // Format the output with base58 address (without coinInfo complexity)
-    snprintf(tag->parsedContent,
-             MAX_TAG_PARSED_CONTENT_SIZE,
-             "\"%s\"",
-             base58_address);
+    snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "\"%s\"", base58_address);
 
     PRINTF("Parsed tag: %s\n", tag->parsedContent);
     return true;
@@ -397,7 +394,8 @@ bool parse_tag_4(tag_info_t* tag) {
     // Parse the exponent, it is supposed to be negative
     parsed_number_t num = parse_number(exponent_start, exponent_end);
     if (!num.is_signed && num.value.unsigned_val != 0) {
-        PRINTF("Warning: positive exponent %llu found\n", (unsigned long long)num.value.unsigned_val);
+        PRINTF("Warning: positive exponent %llu found\n",
+               (unsigned long long)num.value.unsigned_val);
         return false;
     }
     int64_t exponent = num.value.signed_val;
@@ -426,10 +424,13 @@ bool parse_tag_4(tag_info_t* tag) {
     }
     uint64_t mantissa = num.value.unsigned_val;
 
-    PRINTF("Parsed exponent: %lld, mantissa: %llu\n", (long long)exponent, (unsigned long long)mantissa);
+    PRINTF("Parsed exponent: %lld, mantissa: %llu\n",
+           (long long)exponent,
+           (unsigned long long)mantissa);
 
     // Check for extreme values that would create unreadable output
     int64_t abs_exponent = -exponent;
+
     
     // Convert mantissa to string first to get its length
     char mantissa_str[258];
@@ -438,14 +439,18 @@ bool parse_tag_4(tag_info_t* tag) {
         return false;
     }
     size_t mantissa_len = strlen(mantissa_str);
+
     
     // Handle extreme cases with scientific notation or sensible limits
     if (abs_exponent > 50) {
         // For very negative exponents, use scientific notation: mantissa * 10^exponent
         char exponent_str[32];
         format_i64(exponent_str, sizeof(exponent_str), exponent);
-        snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, 
-                "%s * 10^%s", mantissa_str, exponent_str);
+        snprintf(tag->parsedContent,
+                 MAX_TAG_PARSED_CONTENT_SIZE,
+                 "%s * 10^%s",
+                 mantissa_str,
+                 exponent_str);
         PRINTF("Using scientific notation for extreme exponent\n");
     } else if (abs_exponent == 0) {
         // No decimal places needed
@@ -464,14 +469,18 @@ bool parse_tag_4(tag_info_t* tag) {
     } else {
         // Number is less than 1, need leading zeros after decimal
         size_t zeros = abs_exponent - mantissa_len;
+
         
         // Limit the number of leading zeros to keep output readable
         if (zeros > 15) {
             // Use scientific notation for very small numbers
             char exponent_str[32];
             format_i64(exponent_str, sizeof(exponent_str), exponent);
-            snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, 
-                    "%s * 10^%s", mantissa_str, exponent_str);
+            snprintf(tag->parsedContent,
+                     MAX_TAG_PARSED_CONTENT_SIZE,
+                     "%s * 10^%s",
+                     mantissa_str,
+                     exponent_str);
             PRINTF("Using scientific notation for very small number\n");
         } else {
             // Use normal decimal representation with limited zeros
@@ -729,14 +738,16 @@ bool remove_useless_commas(buffer_t* buffer) {
                     while (quote_start > 0 && mutable_buffer[quote_start] != '"') {
                         quote_start--;
                     }
+
                     
                     // Check if this looks like a quoted key followed by opening brace
                     if (quote_start > 0 && mutable_buffer[quote_start] == '"') {
                         is_map_key = true;
-                        PRINTF("Converting comma to colon at position %d (JSON map key)\n", (int)read_pos);
+                        PRINTF("Converting comma to colon at position %d (JSON map key)\n",
+                               (int)read_pos);
                     }
                 }
-                
+
                 if (is_map_key) {
                     // Replace comma with colon for JSON map key syntax
                     mutable_buffer[write_pos] = ':';

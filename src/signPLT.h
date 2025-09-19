@@ -17,7 +17,7 @@
 #define MAX_PLT_OPERATIONS          10
 #define MAX_PLT_SUMMARY_STR         64
 
-void handle_sign_plt_transaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more);
+void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more);
 
 typedef enum {
     PLT_FIELD_NONE = 0,
