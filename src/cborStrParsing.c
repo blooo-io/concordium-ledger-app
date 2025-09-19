@@ -431,7 +431,6 @@ bool parse_tag_4(tag_info_t* tag) {
     // Check for extreme values that would create unreadable output
     int64_t abs_exponent = -exponent;
 
-    
     // Convert mantissa to string first to get its length
     char mantissa_str[258];
     if (!format_u64(mantissa_str, sizeof(mantissa_str), mantissa)) {
@@ -440,7 +439,6 @@ bool parse_tag_4(tag_info_t* tag) {
     }
     size_t mantissa_len = strlen(mantissa_str);
 
-    
     // Handle extreme cases with scientific notation or sensible limits
     if (abs_exponent > 50) {
         // For very negative exponents, use scientific notation: mantissa * 10^exponent
@@ -470,7 +468,6 @@ bool parse_tag_4(tag_info_t* tag) {
         // Number is less than 1, need leading zeros after decimal
         size_t zeros = abs_exponent - mantissa_len;
 
-        
         // Limit the number of leading zeros to keep output readable
         if (zeros > 15) {
             // Use scientific notation for very small numbers
@@ -739,7 +736,6 @@ bool remove_useless_commas(buffer_t* buffer) {
                         quote_start--;
                     }
 
-                    
                     // Check if this looks like a quoted key followed by opening brace
                     if (quote_start > 0 && mutable_buffer[quote_start] == '"') {
                         is_map_key = true;

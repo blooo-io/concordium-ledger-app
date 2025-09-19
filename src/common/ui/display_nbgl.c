@@ -1244,7 +1244,6 @@ void uiPltOperationDisplay(void) {
     if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
         uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
 
-        
         // For NBGL, support structured display for up to 10 operations
         // For more operations, fall back to JSON display for better user experience
         if (opCount > 10) {
@@ -1261,7 +1260,6 @@ void uiPltOperationDisplay(void) {
 
             // Display each operation individually
 
-            
             for (uint8_t i = 0; i < opCount && i < MAX_PLT_OPERATIONS; i++) {
                 // Operation type - always shown
                 if (opCount == 1) {

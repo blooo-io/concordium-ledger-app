@@ -356,7 +356,7 @@ static bool extract_recipient_address(const char* recipient_object,
             return true;
         }
     }
-    
+
     // Check if it's already a plain address without quotes
     if (recipient_object[0] != '{' && recipient_object[0] != '"') {
         // Plain address string - just copy it
