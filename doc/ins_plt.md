@@ -13,10 +13,34 @@ A transaction type for handling protected ledger operations. The transaction inc
 
 ## Constraints
 
+### Data Size Constraints
 - Maximum token ID length: 255 bytes
-- Maximum CBOR data length: 900 bytes
+- Maximum CBOR data length: 900 bytes per chunk
 - CBOR data must be valid according to the CBOR specification
 - Total display string length must not exceed 2000 bytes
+### Operation Display Constraints
+- **Maximum individual operations displayed**: 10 operations
+- **JSON fallback**: When more than 10 operations are present, the display automatically falls back to JSON format
+- **Display buffer limits**: NBGL devices (Stax/Flex) use a 32-pair display buffer system:
+  - 2 pairs reserved for sender and token ID
+  - Each operation uses 1-4 pairs depending on available fields (operation type, amount, recipient, target)
+  - This limits individual display to ~10 operations in practice
+
+### Field Size Constraints
+- **Operation type**: Limited by display buffer space
+- **Amount values**: Must fit within display formatting constraints
+- **Recipient addresses**: Must be valid Concordium addresses or account references
+- **Target addresses**: Same constraints as recipient addresses
+
+### Device-Specific Behavior
+- **BAGL devices** (Nano S/S+/X): Use step-by-step display with automatic JSON fallback
+- **NBGL devices** (Stax/Flex): Use structured display with pair-based UI, automatic JSON fallback
+
+### Display Mode Selection
+The app automatically chooses display mode based on operation count:
+- **≤ 10 operations**: Individual structured display showing each operation's fields
+- **> 10 operations**: JSON format display of the complete transaction data
+- **Parse failures**: Automatic fallback to raw JSON display
 
 ## PLT-Specific Error Codes
 

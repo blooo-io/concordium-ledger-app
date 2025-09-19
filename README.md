@@ -147,6 +147,16 @@ The app includes standalone fuzz testing capabilities in the `fuzzing/` director
 1. `standalone_export_pk_new_path_fuzzer` - Tests the private key export functionality
 2. `standalone_plt_fuzzer` - Tests the Protected Ledger Transaction (PLT) handling
 
+#### PLT Transaction Constraints
+
+The Protected Ledger Transaction (PLT) feature supports complex multi-operation transactions with automatic display optimization:
+
+- **Individual display**: Up to 10 operations shown with structured field-by-field display
+- **JSON fallback**: Transactions with >10 operations automatically use JSON format display
+- **Device compatibility**: Optimized for both BAGL (Nano series) and NBGL (Stax/Flex) devices
+
+For detailed PLT constraints and technical specifications, see [`doc/ins_plt.md`](doc/ins_plt.md).
+
 To build and run the fuzzers:
 
 ```shell
