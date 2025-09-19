@@ -353,12 +353,8 @@ bool parse_tag_40307(tag_info_t* tag) {
     // Hack for the address to be displayed correctly on the screen
     base58_address[50] = '\0';
 
-    // Format the output with base58 address
-    snprintf(tag->parsedContent,
-             MAX_TAG_PARSED_CONTENT_SIZE,
-             "{coinInfo: %s, address: %s}",
-             coininfo,
-             base58_address);
+    // Format the output with base58 address (without coinInfo complexity)
+    snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "\"%s\"", base58_address);
 
     PRINTF("Parsed tag: %s\n", tag->parsedContent);
     return true;
@@ -398,7 +394,8 @@ bool parse_tag_4(tag_info_t* tag) {
     // Parse the exponent, it is supposed to be negative
     parsed_number_t num = parse_number(exponent_start, exponent_end);
     if (!num.is_signed && num.value.unsigned_val != 0) {
-        PRINTF("Warning: positive exponent %lld found\n", num.value.unsigned_val);
+        PRINTF("Warning: positive exponent %llu found\n",
+               (unsigned long long)num.value.unsigned_val);
         return false;
     }
     int64_t exponent = num.value.signed_val;
@@ -422,18 +419,19 @@ bool parse_tag_4(tag_info_t* tag) {
     // Parse the mantissa, it is supposed to be positive
     num = parse_number(mantissa_start, mantissa_end);
     if (num.is_signed) {
-        PRINTF("Warning: negative mantissa %lld found\n", num.value.signed_val);
+        PRINTF("Warning: negative mantissa %lld found\n", (long long)num.value.signed_val);
         return false;
     }
     uint64_t mantissa = num.value.unsigned_val;
 
-    PRINTF("Parsed exponent: %lld, mantissa: %lld\n", exponent, mantissa);
+    PRINTF("Parsed exponent: %lld, mantissa: %llu\n",
+           (long long)exponent,
+           (unsigned long long)mantissa);
 
-    // Negative exponent - need to format with decimal places
+    // Check for extreme values that would create unreadable output
     int64_t abs_exponent = -exponent;
 
-    // Manual formatting of mantissa with abs_exponent decimals, using tag->parsedContent as output
-    // 1. Convert mantissa to string
+    // Convert mantissa to string first to get its length
     char mantissa_str[258];
     if (!format_u64(mantissa_str, sizeof(mantissa_str), mantissa)) {
         PRINTF("Failed to format mantissa\n");
@@ -441,8 +439,19 @@ bool parse_tag_4(tag_info_t* tag) {
     }
     size_t mantissa_len = strlen(mantissa_str);
 
-    // 2. If abs_exponent is 0, just copy mantissa_str
-    if (abs_exponent == 0) {
+    // Handle extreme cases with scientific notation or sensible limits
+    if (abs_exponent > 50) {
+        // For very negative exponents, use scientific notation: mantissa * 10^exponent
+        char exponent_str[32];
+        format_i64(exponent_str, sizeof(exponent_str), exponent);
+        snprintf(tag->parsedContent,
+                 MAX_TAG_PARSED_CONTENT_SIZE,
+                 "%s * 10^%s",
+                 mantissa_str,
+                 exponent_str);
+        PRINTF("Using scientific notation for extreme exponent\n");
+    } else if (abs_exponent == 0) {
+        // No decimal places needed
         snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "%s", mantissa_str);
     } else if (mantissa_len > (size_t)abs_exponent) {
         // Place decimal point within the string
@@ -458,18 +467,33 @@ bool parse_tag_4(tag_info_t* tag) {
     } else {
         // Number is less than 1, need leading zeros after decimal
         size_t zeros = abs_exponent - mantissa_len;
-        if (2 + zeros + mantissa_len + 1 > MAX_TAG_PARSED_CONTENT_SIZE) {
-            PRINTF("Buffer too small for formatted decimal\n");
-            return false;
-        }
-        char* out = tag->parsedContent;
-        *out++ = '0';
-        *out++ = '.';
-        for (size_t i = 0; i < zeros; i++) {
+
+        // Limit the number of leading zeros to keep output readable
+        if (zeros > 15) {
+            // Use scientific notation for very small numbers
+            char exponent_str[32];
+            format_i64(exponent_str, sizeof(exponent_str), exponent);
+            snprintf(tag->parsedContent,
+                     MAX_TAG_PARSED_CONTENT_SIZE,
+                     "%s * 10^%s",
+                     mantissa_str,
+                     exponent_str);
+            PRINTF("Using scientific notation for very small number\n");
+        } else {
+            // Use normal decimal representation with limited zeros
+            if (2 + zeros + mantissa_len + 1 > MAX_TAG_PARSED_CONTENT_SIZE) {
+                PRINTF("Buffer too small for formatted decimal\n");
+                return false;
+            }
+            char* out = tag->parsedContent;
             *out++ = '0';
+            *out++ = '.';
+            for (size_t i = 0; i < zeros; i++) {
+                *out++ = '0';
+            }
+            memcpy(out, mantissa_str, mantissa_len);
+            out[mantissa_len] = '\0';
         }
-        memcpy(out, mantissa_str, mantissa_len);
-        out[mantissa_len] = '\0';
     }
 
     PRINTF("Parsed decimal: %s\n", tag->parsedContent);
@@ -674,7 +698,7 @@ bool remove_useless_commas(buffer_t* buffer) {
     size_t buffer_length = strlen(mutable_buffer);
     size_t write_pos = 0;
 
-    PRINTF("Before comma removal: %s\n", mutable_buffer);
+    PRINTF("Before cleanup: %s\n", mutable_buffer);
 
     for (size_t read_pos = 0; read_pos < buffer_length; read_pos++) {
         char current_char = mutable_buffer[read_pos];
@@ -701,6 +725,31 @@ bool remove_useless_commas(buffer_t* buffer) {
                        (int)read_pos,
                        mutable_buffer[next_pos]);
                 continue;
+            } else if (mutable_buffer[next_pos] == '{') {
+                // Check if this comma should be a colon (JSON map key case)
+                // Look backward to see if we have a quoted string just before this comma
+                bool is_map_key = false;
+                if (write_pos > 0 && mutable_buffer[write_pos - 1] == '"') {
+                    // We have a quote just before the comma, look further back for opening quote
+                    size_t quote_start = write_pos - 2;
+                    while (quote_start > 0 && mutable_buffer[quote_start] != '"') {
+                        quote_start--;
+                    }
+
+                    // Check if this looks like a quoted key followed by opening brace
+                    if (quote_start > 0 && mutable_buffer[quote_start] == '"') {
+                        is_map_key = true;
+                        PRINTF("Converting comma to colon at position %d (JSON map key)\n",
+                               (int)read_pos);
+                    }
+                }
+
+                if (is_map_key) {
+                    // Replace comma with colon for JSON map key syntax
+                    mutable_buffer[write_pos] = ':';
+                    write_pos++;
+                    continue;
+                }
             }
         }
 
@@ -717,7 +766,7 @@ bool remove_useless_commas(buffer_t* buffer) {
     // Update buffer size
     buffer->size = write_pos;
 
-    PRINTF("After comma removal: %s\n", mutable_buffer);
+    PRINTF("After cleanup: %s\n", mutable_buffer);
     PRINTF("New buffer length: %d\n", (int)write_pos);
 
     return true;

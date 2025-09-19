@@ -134,7 +134,60 @@ python3 -m ledgerblue.runScript --scp --fileName bin/app.apdu --elfFile bin/app.
 
 ## Test
 
-The concordium app comes with functional tests implemented with Ledger's [Ragger](https://github.com/LedgerHQ/ragger) test framework.
+The concordium app comes with both functional tests and fuzz testing capabilities.
+
+### Functional Tests
+
+The functional tests are implemented with Ledger's [Ragger](https://github.com/LedgerHQ/ragger) test framework.
+
+### Fuzzing
+
+The app includes standalone fuzz testing capabilities in the `fuzzing/` directory. Two fuzzers are provided:
+
+1. `standalone_export_pk_new_path_fuzzer` - Tests the private key export functionality
+2. `standalone_plt_fuzzer` - Tests the Protected Ledger Transaction (PLT) handling
+
+#### PLT Transaction Constraints
+
+The Protected Ledger Transaction (PLT) feature supports complex multi-operation transactions with automatic display optimization:
+
+- **Individual display**: Up to 10 operations shown with structured field-by-field display
+- **JSON fallback**: Transactions with >10 operations automatically use JSON format display
+- **Device compatibility**: Optimized for both BAGL (Nano series) and NBGL (Stax/Flex) devices
+
+For detailed PLT constraints and technical specifications, see [`doc/ins_plt.md`](doc/ins_plt.md).
+
+To build and run the fuzzers:
+
+```shell
+# Navigate to fuzzing directory
+cd fuzzing
+
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (requires Clang)
+cmake ..
+
+# Build the fuzzers
+make
+
+# Run a fuzzer (e.g., the PLT fuzzer)
+./standalone_plt_fuzzer
+```
+
+The fuzzers are designed to be compatible with ClusterFuzzLite and support various sanitizers (Address, Undefined Behavior, Memory) which can be enabled via environment variables:
+
+```shell
+# Run with Address Sanitizer
+SANITIZER=address ./standalone_plt_fuzzer
+
+# Run with Undefined Behavior Sanitizer
+SANITIZER=undefined ./standalone_plt_fuzzer
+
+# Run with Memory Sanitizer
+SANITIZER=memory ./standalone_plt_fuzzer
+```
 
 ### macOS / Windows
 

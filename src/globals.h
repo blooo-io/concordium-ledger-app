@@ -219,6 +219,12 @@ enum {
     ERROR_INVALID_PARAMS_LENGTH = 0x6B0B,
     ERROR_INVALID_MODULE_REF = 0x6B09,
     ERROR_INVALID_COININFO = 0x6B0C,
+
+    // PLT-specific error codes
+    ERROR_PLT_CBOR_ERROR = 0x6B0D,    // PLT CBOR parsing or processing error
+    ERROR_PLT_BUFFER_ERROR = 0x6B0E,  // PLT buffer overflow or size error
+    ERROR_PLT_DATA_ERROR = 0x6B0F,    // PLT data validation or integrity error
+
     // Error codes from the Ledger firmware
     ERROR_DEVICE_LOCKED = 0x530C,
     SW_WRONG_DATA_LENGTH = 0x6A87

@@ -190,7 +190,7 @@ int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpd
  * Throws ERROR_FAILED_CX_OPERATION if hash initialization fails.
  * Throws ERROR_INVALID_TRANSACTION if the transaction header or kind is invalid.
  */
-int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind);
+int handle_header_and_kind(uint8_t *cdata, uint8_t dataLength, uint8_t kind);
 
 /**
  * Adds the account transaction header and the recipient address to the transaction hash, and
