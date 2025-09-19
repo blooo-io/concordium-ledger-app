@@ -935,7 +935,6 @@ static char plt_amount_titles[5][32];
 static char plt_recipient_titles[5][32];
 static char plt_target_titles[5][32];
 
-
 // Individual operation screens (dynamically populated)
 UX_STEP_NOCB(ux_plt_op1_type_step,
              bnnn_paging,
@@ -1160,21 +1159,22 @@ static void preparePLTTitles() {
 }
 
 // Dynamic flow array for building PLT operation flows at runtime
-static const ux_flow_step_t* dynamic_plt_flow[24];
+static const ux_flow_step_t *dynamic_plt_flow[24];
 
 static void buildDynamicPltFlow() {
     uint8_t step_index = 0;
     uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
-    
+
     // Start with review and sender
     dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_review;
     dynamic_plt_flow[step_index++] = &ux_sign_flow_account_sender_view;
     dynamic_plt_flow[step_index++] = &ux_plt_token_id_step;  // Token ID
-    
+
     // Add steps for each operation based on available fields
     for (uint8_t i = 0; i < opCount && i < 5 && step_index < 29; i++) {
-        pltFieldFlags_t fields = global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields;
-        
+        pltFieldFlags_t fields =
+            global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields;
+
         // Always show operation type
         switch (i) {
             case 0:
@@ -1239,7 +1239,7 @@ static void buildDynamicPltFlow() {
                 break;
         }
     }
-    
+
     // End with sign/decline
     dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_sign;
     dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_decline;
@@ -1254,7 +1254,7 @@ void uiPltOperationDisplay() {
         if (opCount <= 5) {
             preparePLTTitles();
             buildDynamicPltFlow();
-            
+
             PRINTF("Using dynamic PLT operation flow for %d operations\n", opCount);
             ux_flow_init(0, dynamic_plt_flow, NULL);
             return;
