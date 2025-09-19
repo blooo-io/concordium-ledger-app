@@ -19,12 +19,12 @@ A transaction type for handling protected ledger operations. The transaction inc
 - CBOR data must be valid according to the CBOR specification
 - Total display string length must not exceed 2000 bytes
 ### Operation Display Constraints
-- **Maximum individual operations displayed**: 10 operations
-- **JSON fallback**: When more than 10 operations are present, the display automatically falls back to JSON format
-- **Display buffer limits**: NBGL devices (Stax/Flex) use a 32-pair display buffer system:
-  - 2 pairs reserved for sender and token ID
-  - Each operation uses 1-4 pairs depending on available fields (operation type, amount, recipient, target)
-  - This limits individual display to ~10 operations in practice
+- **NBGL devices (Stax/Flex)**: Maximum 10 operations for individual display
+- **BAGL devices (Nano X/S+)**: Maximum 5 operations for individual display  
+- **JSON fallback**: When operation count exceeds device limits, display automatically falls back to JSON format
+- **Display buffer limits**: 
+  - **NBGL devices**: Use 32-pair display buffer system (2 pairs for header + ~3 pairs per operation)
+  - **BAGL devices**: Use step-by-step display with memory constraints limiting to 5 operations
 
 ### Field Size Constraints
 - **Operation type**: Limited by display buffer space
@@ -37,9 +37,17 @@ A transaction type for handling protected ledger operations. The transaction inc
 - **NBGL devices** (Stax/Flex): Use structured display with pair-based UI, automatic JSON fallback
 
 ### Display Mode Selection
-The app automatically chooses display mode based on operation count:
+The app automatically chooses display mode based on operation count and device type:
+
+**NBGL devices (Stax/Flex):**
 - **≤ 10 operations**: Individual structured display showing each operation's fields
 - **> 10 operations**: JSON format display of the complete transaction data
+
+**BAGL devices (Nano X/S+):**
+- **≤ 5 operations**: Individual structured display showing each operation's fields  
+- **> 5 operations**: JSON format display of the complete transaction data
+
+**All devices:**
 - **Parse failures**: Automatic fallback to raw JSON display
 
 ## PLT-Specific Error Codes
