@@ -12,15 +12,15 @@ static tx_state_t *tx_state = &global_tx_state;
 
 #define P1_INITIAL 0x01
 
-static void indent(int nestingLevel) {
-    while (nestingLevel--) PRINTF("  ");
+static void indent(int nesting_level) {
+    while (nesting_level--) PRINTF("  ");
 }
 
 bool cbor_read_string_or_byte_string(CborValue *it,
                                      char *output_ptr,
                                      size_t *output_size,
-                                     bool isString) {
-    if (isString) {
+                                     bool is_string) {
+    if (is_string) {
         LEDGER_ASSERT(cbor_value_is_text_string(it), "expected string did not get it");
     } else {
         LEDGER_ASSERT(cbor_value_is_byte_string(it), "expected byte string did not get it");
@@ -55,13 +55,13 @@ void add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
     dst->offset += src_size;
 }
 
-CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
+CborError decode_cbor_recursive(CborValue *it, int nesting_level, buffer_t *out_buf) {
     const char *temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
         CborType type = cbor_value_get_type(it);
 
-        indent(nestingLevel);
+        indent(nesting_level);
         switch (type) {
             case CborArrayType:
             case CborMapType: {
@@ -78,11 +78,11 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
-                err = decode_cbor_recursive(&recursed, nestingLevel + 1, out_buf);
+                err = decode_cbor_recursive(&recursed, nesting_level + 1, out_buf);
                 if (err) return err;  // parse error
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;  // parse error
-                indent(nestingLevel);
+                indent(nesting_level);
                 if (type == CborArrayType) {
                     temp = "],";
                 } else {
@@ -188,6 +188,16 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
                 break;
             }
 
+            case CborFloatType: {
+                float f;
+                char temp2[32];
+                cbor_value_get_float(it, &f);
+                snprintf(temp2, sizeof(temp2), "Float:0x%08x,", (uint32_t)f);
+                PRINTF("Float: 0x%08x\n", (uint32_t)f);
+                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                break;
+            }
+
             case CborDoubleType: {
                 double val;
                 char temp2[32];
@@ -219,13 +229,13 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
     return CborNoError;
 }
 
-bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
+bool parse_plt_cbor(uint8_t *cbor, size_t cbor_length) {
     CborParser parser;
     CborValue it;
     CborError err;
 
     // Initialize parser
-    err = cbor_parser_init(cbor, cborLength, 0, &parser, &it);
+    err = cbor_parser_init(cbor, cbor_length, 0, &parser, &it);
     if (err) {
         return false;
     }
@@ -256,7 +266,7 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
 }
 
 // Helper function to extract value between quotes or after colon
-static const char* findSubstring(const char* haystack, const char* needle) {
+static const char* find_substring(const char* haystack, const char* needle) {
     const char* pos = haystack;
     while (*pos) {
         const char* h = pos;
@@ -271,173 +281,242 @@ static const char* findSubstring(const char* haystack, const char* needle) {
     return NULL;
 }
 
-static bool extractFieldValue(const char* input,
-                              const char* fieldName,
+static bool extract_field_value(const char* input,
+                              const char* field_name,
                               char* output,
-                              size_t outputSize) {
-    // Look for pattern: "fieldName":value
+                              size_t output_size) {
+    // Look for pattern: "field_name":value
     char pattern[64];
-    snprintf(pattern, sizeof(pattern), "\"%s\":", fieldName);
+    snprintf(pattern, sizeof(pattern), "\"%s\":", field_name);
 
-    const char* fieldPos = findSubstring(input, pattern);
-    if (!fieldPos) return false;
+    const char* field_pos = find_substring(input, pattern);
+    if (!field_pos) return false;
 
     // Move to after the pattern
-    const char* valueStart = fieldPos + strlen(pattern);
+    const char* value_start = field_pos + strlen(pattern);
 
     // Skip whitespace
-    while (*valueStart == ' ') valueStart++;
+    while (*value_start == ' ') value_start++;
 
-    const char* valueEnd;
-    size_t copyLen;
+    const char* value_end;
+    size_t copy_len;
 
-    if (*valueStart == '"') {
+    if (*value_start == '"') {
         // String value - find closing quote
-        valueStart++;  // Skip opening quote
-        valueEnd = valueStart;
-        while (*valueEnd && *valueEnd != '"') valueEnd++;
-        copyLen = valueEnd - valueStart;
-    } else if (*valueStart == '{') {
+        value_start++;  // Skip opening quote
+        value_end = value_start;
+        while (*value_end && *value_end != '"') value_end++;
+        copy_len = value_end - value_start;
+    } else if (*value_start == '{') {
         // Object value - find matching closing brace
-        valueEnd = valueStart + 1;
-        int braceCount = 1;
-        while (*valueEnd && braceCount > 0) {
-            if (*valueEnd == '{')
-                braceCount++;
-            else if (*valueEnd == '}')
-                braceCount--;
-            valueEnd++;
+        value_end = value_start + 1;
+        int brace_count = 1;
+        while (*value_end && brace_count > 0) {
+            if (*value_end == '{')
+                brace_count++;
+            else if (*value_end == '}')
+                brace_count--;
+            value_end++;
         }
-        copyLen = valueEnd - valueStart;
+        copy_len = value_end - value_start;
     } else {
         // Numeric or other value - find next comma, brace, or end
-        valueEnd = valueStart;
-        while (*valueEnd && *valueEnd != ',' && *valueEnd != '}' && *valueEnd != ']') {
-            valueEnd++;
+        value_end = value_start;
+        while (*value_end && *value_end != ',' && *value_end != '}' && *value_end != ']') {
+            value_end++;
         }
-        copyLen = valueEnd - valueStart;
+        copy_len = value_end - value_start;
     }
 
-    if (copyLen >= outputSize) copyLen = outputSize - 1;
-    memcpy(output, valueStart, copyLen);
-    output[copyLen] = '\0';
+    if (copy_len >= output_size) copy_len = output_size - 1;
+    memcpy(output, value_start, copy_len);
+    output[copy_len] = '\0';
 
     return true;
 }
 
-static bool extractRecipientAddress(const char* recipientObject,
+static bool extract_recipient_address(const char* recipient_object,
                                     char* address,
-                                    size_t addressSize) {
-    // Look for "address: " pattern in the recipient object
-    const char* addressPos = findSubstring(recipientObject, "address: ");
-    if (!addressPos) return false;
+                                    size_t address_size) {
+    // Check if it's a simple quoted address (new format): "address"
+    if (recipient_object[0] == '"') {
+        // Find the closing quote
+        const char* address_start = recipient_object + 1;
+        const char* address_end = address_start;
+        while (*address_end && *address_end != '"') {
+            address_end++;
+        }
+        
+        if (*address_end == '"' && address_end > address_start) {
+            size_t copy_len = address_end - address_start;
+            if (copy_len >= address_size) copy_len = address_size - 1;
+            
+            memcpy(address, address_start, copy_len);
+            address[copy_len] = '\0';
+            return true;
+        }
+    }
+    
+    // Check if it's already a plain address without quotes
+    if (recipient_object[0] != '{' && recipient_object[0] != '"') {
+        // Plain address string - just copy it
+        size_t len = 0;
+        while (recipient_object[len] && recipient_object[len] != ',' && 
+               recipient_object[len] != '}' && recipient_object[len] != ' ') {
+            len++;
+        }
+        
+        if (len > 0 && len < address_size) {
+            memcpy(address, recipient_object, len);
+            address[len] = '\0';
+            return true;
+        }
+    }
+    
+    // Fallback: Look for "address: " pattern in complex object (legacy format)
+    const char* address_pos = find_substring(recipient_object, "address: ");
+    if (!address_pos) return false;
 
-    const char* addressStart = addressPos + strlen("address: ");
-    const char* addressEnd = addressStart;
+    const char* address_start = address_pos + strlen("address: ");
+    const char* address_end = address_start;
 
     // Find end of address (until } or end)
-    while (*addressEnd && *addressEnd != '}' && *addressEnd != ',') {
-        addressEnd++;
+    while (*address_end && *address_end != '}' && *address_end != ',') {
+        address_end++;
     }
 
-    size_t copyLen = addressEnd - addressStart;
-    if (copyLen >= addressSize) copyLen = addressSize - 1;
+    size_t copy_len = address_end - address_start;
+    if (copy_len >= address_size) copy_len = address_size - 1;
 
-    memcpy(address, addressStart, copyLen);
-    address[copyLen] = '\0';
+    memcpy(address, address_start, copy_len);
+    address[copy_len] = '\0';
 
     return true;
 }
 
-static bool parseSingleOperation(const char* operationStr, singlePLTOperation_t* operation) {
-    if (!operationStr || !operation) return false;
+static bool parse_single_operation(const char* operation_str, singlePLTOperation_t* operation) {
+    if (!operation_str || !operation) return false;
+
+    // Initialize all fields
+    memset(operation, 0, sizeof(singlePLTOperation_t));
+    operation->availableFields = PLT_FIELD_NONE;
 
     // Find the operation type (first quoted string after opening brace)
-    const char* firstQuote = findSubstring(operationStr, "\"");
-    if (!firstQuote) return false;
+    const char* first_quote = find_substring(operation_str, "\"");
+    if (!first_quote) return false;
 
-    const char* typeStart = firstQuote + 1;
-    const char* typeEnd = typeStart;
-    while (*typeEnd && *typeEnd != '"') typeEnd++;
+    const char* type_start = first_quote + 1;
+    const char* type_end = type_start;
+    while (*type_end && *type_end != '"') type_end++;
 
-    size_t typeLen = typeEnd - typeStart;
-    if (typeLen >= MAX_PLT_OPERATION_TYPE) typeLen = MAX_PLT_OPERATION_TYPE - 1;
-    memcpy(operation->operationType, typeStart, typeLen);
-    operation->operationType[typeLen] = '\0';
+    size_t type_len = type_end - type_start;
+    if (type_len >= MAX_PLT_OPERATION_TYPE) type_len = MAX_PLT_OPERATION_TYPE - 1;
+    memcpy(operation->operationType, type_start, type_len);
+    operation->operationType[type_len] = '\0';
 
-    // Extract amount
-    if (!extractFieldValue(operationStr, "amount", operation->amount, MAX_PLT_AMOUNT_STR)) {
-        strncpy(operation->amount, "N/A", MAX_PLT_AMOUNT_STR - 1);
-    }
-
-    // Extract recipient object first
-    char recipientObject[256];
-    if (extractFieldValue(operationStr, "recipient", recipientObject, sizeof(recipientObject))) {
-        // Extract address from the recipient object
-        if (!extractRecipientAddress(recipientObject,
-                                     operation->recipient,
-                                     MAX_PLT_RECIPIENT_STR)) {
-            strncpy(operation->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+    // Parse fields based on operation type
+    if (strcmp(operation->operationType, "transfer") == 0) {
+        // transfer: amount, recipient (address only)
+        if (extract_field_value(operation_str, "amount", operation->amount, MAX_PLT_AMOUNT_STR)) {
+            operation->availableFields |= PLT_FIELD_AMOUNT;
         }
-    } else {
-        strncpy(operation->recipient, "N/A", MAX_PLT_RECIPIENT_STR - 1);
+        
+        char recipient_object[256];
+        if (extract_field_value(operation_str, "recipient", recipient_object, sizeof(recipient_object))) {
+            if (extract_recipient_address(recipient_object, operation->recipient, MAX_PLT_RECIPIENT_STR)) {
+                operation->availableFields |= PLT_FIELD_RECIPIENT;
+            }
+        }
+    } 
+    else if (strcmp(operation->operationType, "addDenyList") == 0 ||
+             strcmp(operation->operationType, "addAllowList") == 0 ||
+             strcmp(operation->operationType, "removeAllowList") == 0 ||
+             strcmp(operation->operationType, "removeDenyList") == 0) {
+        // addDenyList/addAllowList/removeAllowList/removeDenyList: target (address only)
+        char target_object[256];
+        if (extract_field_value(operation_str, "target", target_object, sizeof(target_object))) {
+            if (extract_recipient_address(target_object, operation->target, MAX_PLT_TARGET_STR)) {
+                operation->availableFields |= PLT_FIELD_TARGET;
+            }
+        }
+    }
+    else if (strcmp(operation->operationType, "mint") == 0 ||
+             strcmp(operation->operationType, "burn") == 0) {
+        // mint/burn: amount only
+        if (extract_field_value(operation_str, "amount", operation->amount, MAX_PLT_AMOUNT_STR)) {
+            operation->availableFields |= PLT_FIELD_AMOUNT;
+        }
+    }
+    else if (strcmp(operation->operationType, "pause") == 0 ||
+             strcmp(operation->operationType, "unpause") == 0) {
+        // pause/unpause: no fields
+        // availableFields already set to PLT_FIELD_NONE
     }
 
     return true;
 }
 
-bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t *parsed) {
-    if (!operationDisplay || !parsed) return false;
+bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperation_t *parsed) {
+    if (!operation_display || !parsed) return false;
 
     // Initialize parsed structure
     memset(parsed, 0, sizeof(parsedPLTOperation_t));
     parsed->isParsed = false;
 
-    PRINTF("Parsing PLT operation: %s\n", operationDisplay);
+    PRINTF("Parsing PLT operation: %s\n", operation_display);
 
     // Count operations by counting opening braces after the initial '['
-    const char* pos = operationDisplay;
-    uint8_t operationCount = 0;
+    const char* pos = operation_display;
+    uint8_t operation_count = 0;
+    bool more_operations_exist = false;
 
     // Skip initial '['
     while (*pos && *pos != '[') pos++;
     if (*pos == '[') pos++;
 
     // Find each operation (starts with '{')
-    while (*pos && operationCount < MAX_PLT_OPERATIONS) {
+    while (*pos && operation_count < MAX_PLT_OPERATIONS) {
         // Skip whitespace and commas
         while (*pos && (*pos == ' ' || *pos == ',' || *pos == '\n')) pos++;
 
         if (*pos == '{') {
             // Found start of an operation, find the end
-            const char* opStart = pos;
-            int braceCount = 1;
+            const char* op_start = pos;
+            int brace_count = 1;
             pos++;  // Skip opening brace
 
-            while (*pos && braceCount > 0) {
+            while (*pos && brace_count > 0) {
                 if (*pos == '{')
-                    braceCount++;
+                    brace_count++;
                 else if (*pos == '}')
-                    braceCount--;
+                    brace_count--;
                 pos++;
             }
 
-            if (braceCount == 0) {
+            if (brace_count == 0) {
                 // Extract this operation string
-                size_t opLen = pos - opStart;
-                char opStr[512];
-                if (opLen < sizeof(opStr)) {
-                    memcpy(opStr, opStart, opLen);
-                    opStr[opLen] = '\0';
+                size_t opLen = pos - op_start;
+                char op_str[512];
+                if (opLen < sizeof(op_str)) {
+                    memcpy(op_str, op_start, opLen);
+                    op_str[opLen] = '\0';
 
                     // Parse this single operation
-                    if (parseSingleOperation(opStr, &parsed->operations[operationCount])) {
-                        PRINTF("Parsed operation %d: Type=%s, Amount=%s, Recipient=%s\n",
-                               operationCount + 1,
-                               parsed->operations[operationCount].operationType,
-                               parsed->operations[operationCount].amount,
-                               parsed->operations[operationCount].recipient);
-                        operationCount++;
+                    if (parse_single_operation(op_str, &parsed->operations[operation_count])) {
+                        PRINTF("Parsed operation %d: Type=%s, Fields=0x%02X\n",
+                               operation_count + 1,
+                               parsed->operations[operation_count].operationType,
+                               parsed->operations[operation_count].availableFields);
+                        if (parsed->operations[operation_count].availableFields & PLT_FIELD_AMOUNT) {
+                            PRINTF("  Amount: %s\n", parsed->operations[operation_count].amount);
+                        }
+                        if (parsed->operations[operation_count].availableFields & PLT_FIELD_RECIPIENT) {
+                            PRINTF("  Recipient: %s\n", parsed->operations[operation_count].recipient);
+                        }
+                        if (parsed->operations[operation_count].availableFields & PLT_FIELD_TARGET) {
+                            PRINTF("  Target: %s\n", parsed->operations[operation_count].target);
+                        }
+                        operation_count++;
                     }
                 }
             }
@@ -449,15 +528,30 @@ bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t *
         }
     }
 
-    parsed->operationCount = operationCount;
+    // Check if there are more operations beyond MAX_PLT_OPERATIONS
+    if (operation_count == MAX_PLT_OPERATIONS) {
+        // Continue checking for more operations without parsing them
+        while (*pos && (*pos == ' ' || *pos == ',' || *pos == '\n')) pos++;
+        if (*pos == '{') {
+            more_operations_exist = true;
+            PRINTF("Found more than %d operations, fallback to JSON display\n", MAX_PLT_OPERATIONS);
+        }
+    }
 
-    if (operationCount == 0) {
+    parsed->operationCount = operation_count;
+
+    if (operation_count == 0) {
         return false;
     }
 
-    parsed->isParsed = true;
-
-    PRINTF("Successfully parsed %d operations\n", operationCount);
+    // Only mark as parsed if we can display all operations individually
+    if (!more_operations_exist) {
+        parsed->isParsed = true;
+        PRINTF("Successfully parsed %d operations\n", operation_count);
+    } else {
+        parsed->isParsed = false;
+        PRINTF("Too many operations (%d+), using JSON fallback display\n", operation_count);
+    }
 
     return true;
 }
@@ -511,44 +605,45 @@ bool parsePLTOperationForUI(const char* operationDisplay, parsedPLTOperation_t *
  * @note User approval is required via UI display before transaction completion
  * @note All sensitive data is cleared from memory on error conditions
  */
-void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more
+void handle_sign_plt_transaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more
                               //   bool isInitialCall
 ) {
-    uint8_t remainingDataLength = lc;
+    uint8_t remaining_data_length = lc;
 
     if (chunk == 0) {
         explicit_bzero(ctx, sizeof(signPLTContext_t));
         ctx->currentCborLength = 0;
         ctx->totalCborLength = 0;
         // Parse and hash the header and kind
-        uint8_t offset = handleHeaderAndKind(cdata, remainingDataLength, PLT_TRANSACTION);
+        uint8_t offset = handle_header_and_kind(cdata, remaining_data_length, PLT_TRANSACTION);
         cdata += offset;
-        remainingDataLength -= offset;
+        remaining_data_length -= offset;
 
         // Hash the rest of the chunk
-        updateHash((cx_hash_t *)&tx_state->hash, cdata, remainingDataLength);
+        updateHash((cx_hash_t *)&tx_state->hash, cdata, remaining_data_length);
 
         // Parse token Id info
         ctx->tokenIdLength = cdata[0];
         cdata++;
-        remainingDataLength--;
+        remaining_data_length--;
 
-        if (remainingDataLength < ctx->tokenIdLength) {
+        if (remaining_data_length < ctx->tokenIdLength) {
             PRINTF("Not enough data left\n");
             THROW(ERROR_PLT_DATA_ERROR);
         }
         memcpy(ctx->tokenId, cdata, ctx->tokenIdLength);
+        ctx->tokenId[ctx->tokenIdLength] = '\0';  // Null-terminate for display
         cdata += ctx->tokenIdLength;
-        remainingDataLength -= ctx->tokenIdLength;
+        remaining_data_length -= ctx->tokenIdLength;
 
         // Parse OperationLength
-        if (remainingDataLength < 4) {
+        if (remaining_data_length < 4) {
             PRINTF("Not enough data left\n");
             THROW(ERROR_PLT_DATA_ERROR);
         }
         ctx->totalCborLength = U4BE(cdata, 0);
         cdata += 4;
-        remainingDataLength -= 4;
+        remaining_data_length -= 4;
 
         // Check if the OperationLength is larger than the buffer
         if (ctx->totalCborLength > sizeof(ctx->cbor)) {
@@ -560,14 +655,14 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
     }
 
     // Add the cbor to the context
-    if (remainingDataLength > sizeof(ctx->cbor) - ctx->currentCborLength) {
+    if (remaining_data_length > sizeof(ctx->cbor) - ctx->currentCborLength) {
         PRINTF("Cbor received is larger than the buffer, %d > %d\n",
-               remainingDataLength,
+               remaining_data_length,
                sizeof(ctx->cbor) - ctx->currentCborLength);
         THROW(ERROR_PLT_BUFFER_ERROR);
     }
-    memcpy(ctx->cbor + ctx->currentCborLength, cdata, remainingDataLength);
-    ctx->currentCborLength += remainingDataLength;
+    memcpy(ctx->cbor + ctx->currentCborLength, cdata, remaining_data_length);
+    ctx->currentCborLength += remaining_data_length;
 
     if (more) {
         io_send_sw(SUCCESS);
@@ -575,13 +670,13 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
     } else {
         if (ctx->currentCborLength == ctx->totalCborLength) {
             // Parse the cbor
-            if (!parsePltCbor(ctx->cbor, ctx->totalCborLength)) {
+            if (!parse_plt_cbor(ctx->cbor, ctx->totalCborLength)) {
                 PRINTF("Cbor parsing failed\n");
                 THROW(ERROR_PLT_CBOR_ERROR);
             }
 
             // Parse the operation for improved UI display
-            parsePLTOperationForUI(ctx->pltOperationDisplay, &ctx->parsedOperation);
+            parse_plt_operation_for_ui(ctx->pltOperationDisplay, &ctx->parsedOperation);
 
             uiPltOperationDisplay();
         } else {

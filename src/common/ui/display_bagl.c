@@ -933,6 +933,8 @@ UX_STEP_NOCB(ux_plt_operation_1_step,
 static char plt_operation_titles[MAX_PLT_OPERATIONS][32];
 static char plt_amount_titles[MAX_PLT_OPERATIONS][32];
 static char plt_recipient_titles[MAX_PLT_OPERATIONS][32];
+static char plt_target_titles[MAX_PLT_OPERATIONS][32];
+
 
 // Individual operation screens (dynamically populated)
 UX_STEP_NOCB(ux_plt_op1_type_step,
@@ -950,6 +952,11 @@ UX_STEP_NOCB(
     bnnn_paging,
     {.title = plt_recipient_titles[0],
      .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0].recipient});
+UX_STEP_NOCB(
+    ux_plt_op1_target_step,
+    bnnn_paging,
+    {.title = plt_target_titles[0],
+     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0].target});
 
 UX_STEP_NOCB(ux_plt_op2_type_step,
              bnnn_paging,
@@ -966,6 +973,11 @@ UX_STEP_NOCB(
     bnnn_paging,
     {.title = plt_recipient_titles[1],
      .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1].recipient});
+UX_STEP_NOCB(
+    ux_plt_op2_target_step,
+    bnnn_paging,
+    {.title = plt_target_titles[1],
+     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1].target});
 
 UX_STEP_NOCB(ux_plt_op3_type_step,
              bnnn_paging,
@@ -982,6 +994,11 @@ UX_STEP_NOCB(
     bnnn_paging,
     {.title = plt_recipient_titles[2],
      .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2].recipient});
+UX_STEP_NOCB(
+    ux_plt_op3_target_step,
+    bnnn_paging,
+    {.title = plt_target_titles[2],
+     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2].target});
 
 UX_STEP_NOCB(ux_plt_op4_type_step,
              bnnn_paging,
@@ -998,6 +1015,11 @@ UX_STEP_NOCB(
     bnnn_paging,
     {.title = plt_recipient_titles[3],
      .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3].recipient});
+UX_STEP_NOCB(
+    ux_plt_op4_target_step,
+    bnnn_paging,
+    {.title = plt_target_titles[3],
+     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3].target});
 
 UX_STEP_NOCB(ux_plt_op5_type_step,
              bnnn_paging,
@@ -1014,6 +1036,11 @@ UX_STEP_NOCB(
     bnnn_paging,
     {.title = plt_recipient_titles[4],
      .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4].recipient});
+UX_STEP_NOCB(
+    ux_plt_op5_target_step,
+    bnnn_paging,
+    {.title = plt_target_titles[4],
+     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4].target});
 
 // Fallback - Raw operation display
 UX_STEP_NOCB(ux_plt_operation_raw_step,
@@ -1131,6 +1158,7 @@ static void preparePLTTitles() {
             snprintf(plt_operation_titles[i], sizeof(plt_operation_titles[i]), "Operation");
             snprintf(plt_amount_titles[i], sizeof(plt_amount_titles[i]), "Amount");
             snprintf(plt_recipient_titles[i], sizeof(plt_recipient_titles[i]), "Recipient");
+            snprintf(plt_target_titles[i], sizeof(plt_target_titles[i]), "Target");
         } else {
             // Multiple operations - numbered titles
             snprintf(plt_operation_titles[i],
@@ -1142,39 +1170,116 @@ static void preparePLTTitles() {
                      sizeof(plt_recipient_titles[i]),
                      "Recipient %d",
                      i + 1);
+            snprintf(plt_target_titles[i],
+                     sizeof(plt_target_titles[i]),
+                     "Target %d",
+                     i + 1);
         }
     }
 }
 
-void uiPltOperationDisplay() {
-    if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
-        preparePLTTitles();
-        uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
+// Dynamic flow array for building PLT operation flows at runtime
+static const ux_flow_step_t* dynamic_plt_flow[32];
 
-        PRINTF("Using parsed PLT operation flow for %d operations\n", opCount);
-
-        // Choose the appropriate flow based on operation count
-        switch (opCount) {
+static void buildDynamicPltFlow() {
+    uint8_t step_index = 0;
+    uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
+    
+    // Start with review and sender
+    dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_review;
+    dynamic_plt_flow[step_index++] = &ux_sign_flow_account_sender_view;
+    dynamic_plt_flow[step_index++] = &ux_plt_operation_1_step;  // Token ID
+    
+    // Add steps for each operation based on available fields
+    for (uint8_t i = 0; i < opCount && i < 5 && step_index < 29; i++) {
+        pltFieldFlags_t fields = global.withDataBlob.signPLTContext.parsedOperation.operations[i].availableFields;
+        
+        // Always show operation type
+        switch (i) {
+            case 0:
+                dynamic_plt_flow[step_index++] = &ux_plt_op1_type_step;
+                if (fields & PLT_FIELD_AMOUNT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op1_amount_step;
+                }
+                if (fields & PLT_FIELD_RECIPIENT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op1_recipient_step;
+                }
+                if (fields & PLT_FIELD_TARGET) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op1_target_step;
+                }
+                break;
             case 1:
-                ux_flow_init(0, ux_plt_flow_1_op, NULL);
+                dynamic_plt_flow[step_index++] = &ux_plt_op2_type_step;
+                if (fields & PLT_FIELD_AMOUNT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op2_amount_step;
+                }
+                if (fields & PLT_FIELD_RECIPIENT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op2_recipient_step;
+                }
+                if (fields & PLT_FIELD_TARGET) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op2_target_step;
+                }
                 break;
             case 2:
-                ux_flow_init(0, ux_plt_flow_2_ops, NULL);
+                dynamic_plt_flow[step_index++] = &ux_plt_op3_type_step;
+                if (fields & PLT_FIELD_AMOUNT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op3_amount_step;
+                }
+                if (fields & PLT_FIELD_RECIPIENT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op3_recipient_step;
+                }
+                if (fields & PLT_FIELD_TARGET) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op3_target_step;
+                }
                 break;
             case 3:
-                ux_flow_init(0, ux_plt_flow_3_ops, NULL);
+                dynamic_plt_flow[step_index++] = &ux_plt_op4_type_step;
+                if (fields & PLT_FIELD_AMOUNT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op4_amount_step;
+                }
+                if (fields & PLT_FIELD_RECIPIENT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op4_recipient_step;
+                }
+                if (fields & PLT_FIELD_TARGET) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op4_target_step;
+                }
                 break;
             case 4:
-                ux_flow_init(0, ux_plt_flow_4_ops, NULL);
+                dynamic_plt_flow[step_index++] = &ux_plt_op5_type_step;
+                if (fields & PLT_FIELD_AMOUNT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op5_amount_step;
+                }
+                if (fields & PLT_FIELD_RECIPIENT) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op5_recipient_step;
+                }
+                if (fields & PLT_FIELD_TARGET) {
+                    dynamic_plt_flow[step_index++] = &ux_plt_op5_target_step;
+                }
                 break;
-            case 5:
-                ux_flow_init(0, ux_plt_flow_5_ops, NULL);
-                break;
-            default:
-                // For more than 5 operations, fall back to raw display
-                PRINTF("Too many operations (%d), using fallback\n", opCount);
-                ux_flow_init(0, ux_plt_operation_fallback, NULL);
-                break;
+        }
+    }
+    
+    // End with sign/decline
+    dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_sign;
+    dynamic_plt_flow[step_index++] = &ux_sign_flow_shared_decline;
+    dynamic_plt_flow[step_index] = FLOW_END_STEP;
+}
+
+void uiPltOperationDisplay() {
+    if (global.withDataBlob.signPLTContext.parsedOperation.isParsed) {
+        uint8_t opCount = global.withDataBlob.signPLTContext.parsedOperation.operationCount;
+
+        // Support structured display for all operation types up to 5 operations
+        if (opCount <= 5) {
+            preparePLTTitles();
+            buildDynamicPltFlow();
+            
+            PRINTF("Using dynamic PLT operation flow for %d operations\n", opCount);
+            ux_flow_init(0, dynamic_plt_flow, NULL);
+            return;
+        } else {
+            PRINTF("Too many operations (%d), using fallback\n", opCount);
+            ux_flow_init(0, ux_plt_operation_fallback, NULL);
         }
     } else {
         PRINTF("Using fallback PLT operation flow\n");

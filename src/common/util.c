@@ -96,7 +96,7 @@ int hashUpdateHeaderAndType(uint8_t *cdata, uint8_t dataLength, uint8_t validUpd
     return hashHeaderAndType(cdata, dataLength, UPDATE_HEADER_LENGTH, validUpdateType);
 }
 
-int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
+int handle_header_and_kind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
     // Parse the key derivation path, which should always be the first thing received
     // in a command to the Ledger application.
     int keyPathLength = parseKeyDerivationPath(cdata, dataLength);

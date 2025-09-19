@@ -1,4 +1,4 @@
-// This fuzzes the handleSignPltTransaction function with minimal dependencies
+// This fuzzes the handle_sign_plt_transaction function with minimal dependencies
 
 // ========== STEP 1: STANDARD INCLUDES ==========
 #include <stdint.h>
@@ -188,8 +188,8 @@ void updateHash(void *hashContext, const unsigned char *in, unsigned int len) {
 }
 
 // Mock header parsing function
-int handleHeaderAndKind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
-    printf("MOCK handleHeaderAndKind: kind=%u, dataLength=%u\n", kind, dataLength);
+int handle_header_and_kind(uint8_t *cdata, uint8_t dataLength, uint8_t kind) {
+    printf("MOCK handle_header_and_kind: kind=%u, dataLength=%u\n", kind, dataLength);
 
     // Minimal validation
     if (dataLength < 8) {
@@ -647,8 +647,8 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
     return CborNoError;
 }
 
-bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
-    PRINTF("[standalone_plt_fuzzer.c] (parsePltCbor) - cbor: ");
+bool parse_plt_cbor(uint8_t *cbor, size_t cborLength) {
+    PRINTF("[standalone_plt_fuzzer.c] (parse_plt_cbor) - cbor: ");
     for (size_t i = 0; i < cborLength; i++) {
         PRINTF("%02x", cbor[i]);
     }
@@ -692,13 +692,13 @@ bool parsePltCbor(uint8_t *cbor, size_t cborLength) {
 }
 
 // ========== STEP 9: THE TARGET FUNCTION ==========
-// Copy the actual handleSignPltTransaction function
+// Copy the actual handle_sign_plt_transaction function
 
-void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more) {
+void handle_sign_plt_transaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool more) {
     uint8_t remainingDataLength = lc;
 
     PRINTF(
-        "[standalone_plt_fuzzer.c] (handleSignPltTransaction) - Starting handling of plt "
+        "[standalone_plt_fuzzer.c] (handle_sign_plt_transaction) - Starting handling of plt "
         "transaction\n");
 
     if (chunk == 0) {
@@ -706,10 +706,10 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         ctx->currentCborLength = 0;
         ctx->totalCborLength = 0;
         PRINTF(
-            "[standalone_plt_fuzzer.c] (handleSignPltTransaction) Initial chunk about to "
+            "[standalone_plt_fuzzer.c] (handle_sign_plt_transaction) Initial chunk about to "
             "process\n");
         // Parse and hash the header and kind
-        uint8_t offset = handleHeaderAndKind(cdata, remainingDataLength, PLT_TRANSACTION);
+        uint8_t offset = handle_header_and_kind(cdata, remainingDataLength, PLT_TRANSACTION);
         cdata += offset;
         remainingDataLength -= offset;
 
@@ -729,7 +729,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         cdata += ctx->tokenIdLength;
         remainingDataLength -= ctx->tokenIdLength;
 
-        PRINTF("[standalone_plt_fuzzer.c] (handleSignPltTransaction) - TokenID ");
+        PRINTF("[standalone_plt_fuzzer.c] (handle_sign_plt_transaction) - TokenID ");
         for (int i = 0; i < ctx->tokenIdLength; i++) {
             PRINTF("%02x", ctx->tokenId[i]);
         }
@@ -740,7 +740,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
         }
         // Parse OperationLength
         ctx->totalCborLength = U4BE(cdata, 0);
-        PRINTF("[standalone_plt_fuzzer.c] (handleSignPltTransaction) - cborLength %d\n",
+        PRINTF("[standalone_plt_fuzzer.c] (handle_sign_plt_transaction) - cborLength %d\n",
                (int)ctx->totalCborLength);
         cdata += 4;
         remainingDataLength -= 4;
@@ -770,7 +770,7 @@ void handleSignPltTransaction(uint8_t *cdata, uint8_t lc, uint8_t chunk, bool mo
     } else {
         if (ctx->currentCborLength == ctx->totalCborLength) {
             // Parse the cbor
-            if (!parsePltCbor(ctx->cbor, ctx->totalCborLength)) {
+            if (!parse_plt_cbor(ctx->cbor, ctx->totalCborLength)) {
                 PRINTF("Cbor parsing failed\n");
                 THROW_VOID(ERROR_INVALID_PARAM);
             }
@@ -803,7 +803,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     printf("Fuzzing with chunk=%d, more=%s, lc=%d\n", chunk, more ? "true" : "false", lc);
 
     // Call the target function
-    handleSignPltTransaction((uint8_t *)command_data, lc, chunk, more);
+    handle_sign_plt_transaction((uint8_t *)command_data, lc, chunk, more);
 
     printf("PLT Fuzzer completed: No crashes occurred\n");
     return 0;
@@ -812,7 +812,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
     printf("=== CONCORDIUM PLT TRANSACTION FUZZER ===\n");
     printf("Standalone fuzzer - minimal dependencies!\n");
-    printf("Target: handleSignPltTransaction\n\n");
+    printf("Target: handle_sign_plt_transaction\n\n");
 
     // Initialize mock contexts
     explicit_bzero(&mock_plt_context, sizeof(mock_plt_context));
