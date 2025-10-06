@@ -6,6 +6,7 @@
 #include "format.h"  // format_i64, format_hex
 #include "cborStrParsing.h"
 #include "cborinternal_p.h"
+#include "common/stringUtils.h"
 
 static signPLTContext_t* ctx = &global.withDataBlob.signPLTContext;
 static tx_state_t* tx_state = &global_tx_state;
@@ -19,6 +20,7 @@ static void indent(int nesting_level) {
 bool cbor_read_string_or_byte_string(CborValue* it,
                                      char* output_ptr,
                                      size_t* output_size,
+                                     size_t buffer_size,
                                      bool is_string) {
     if (is_string) {
         LEDGER_ASSERT(cbor_value_is_text_string(it), "expected string did not get it");
@@ -29,6 +31,12 @@ bool cbor_read_string_or_byte_string(CborValue* it,
     const char* string_ptr;
     CborError err = _cbor_value_get_string_chunk(it, (const void**)&string_ptr, output_size, NULL);
     if (err) {
+        return true;
+    }
+
+    // Check for buffer overflow
+    if (*output_size > buffer_size) {
+        PRINTF("Buffer overflow: string size %zu exceeds buffer size %zu\n", *output_size, buffer_size);
         return true;
     }
 
@@ -55,11 +63,17 @@ void add_char_array_to_buffer(buffer_t* dst, char* src, size_t src_size) {
     dst->offset += src_size;
 }
 
-CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_buf) {
+CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_buf, size_t buffer_size) {
     const char* temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
         CborType type = cbor_value_get_type(it);
+
+        // Check if we have enough space in the buffer before proceeding
+        if (out_buf->offset >= buffer_size) {
+            PRINTF("Buffer overflow: offset %zu >= buffer size %zu\n", out_buf->offset, buffer_size);
+            return CborErrorInternalError;  // Return error to stop recursion
+        }
 
         indent(nesting_level);
         switch (type) {
@@ -78,7 +92,7 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
-                err = decode_cbor_recursive(&recursed, nesting_level + 1, out_buf);
+                err = decode_cbor_recursive(&recursed, nesting_level + 1, out_buf, buffer_size);
                 if (err) return err;  // parse error
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;  // parse error
@@ -93,8 +107,8 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
                 continue;
             }
             case CborIntegerType: {
-                char temp2[25];  // 25 to handle max uint64
-                char temp3[30];  // 30 to handle the "Int:" prefix and max uint64
+                char integer_value[CBOR_INTEGER_BUFFER_SIZE];  // Buffer for uint64 integer formatting
+                char integer_display[CBOR_INTEGER_PREFIX_SIZE];  // Buffer for "Int:" prefix + uint64 integer
                 uint64_t raw_val = 0;
 
                 // Get the raw integer value first
@@ -105,55 +119,61 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
                 if (cbor_value_is_negative_integer(it)) {
                     // Handle negative integers
                     int64_t signed_val = -(int64_t)(raw_val + 1);
-                    format_i64(temp2, sizeof(temp2), signed_val);
+                    format_i64(integer_value, sizeof(integer_value), signed_val);
                 } else {
                     // Handle positive integers
-                    format_u64(temp2, sizeof(temp2), raw_val);
+                    format_u64(integer_value, sizeof(integer_value), raw_val);
                 }
 
-                snprintf(temp3, sizeof(temp3), "Int:%s,", temp2);
-                add_char_array_to_buffer(out_buf, temp3, strlen(temp3));
+                snprintf(integer_display, sizeof(integer_display), "Int:%s,", integer_value);
+                add_char_array_to_buffer(out_buf, integer_display, strlen(integer_display));
                 break;
             }
 
             case CborByteStringType: {
-                uint8_t buf[250];
-                size_t buf_len;
-                err = cbor_read_string_or_byte_string(it, (char*)buf, &buf_len, false);
+                uint8_t byte_string_data[CBOR_STRING_BUFFER_SIZE];
+                size_t byte_string_length;
+                err = cbor_read_string_or_byte_string(it, (char*)byte_string_data, &byte_string_length, sizeof(byte_string_data), false);
                 if (err) return err;
-                char string_value[100] = {0};
-                if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
+                char string_value[CBOR_HEX_DISPLAY_SIZE] = {0};
+                if (format_hex(byte_string_data, byte_string_length, string_value, sizeof(string_value)) == -1) {
                     PRINTF("format_hex error\n");
                     THROW(ERROR_PLT_CBOR_ERROR);
                 }
                 add_char_array_to_buffer(out_buf, (char*)"0x", 2);
                 add_char_array_to_buffer(out_buf, string_value, strlen(string_value));
                 add_char_array_to_buffer(out_buf, (char*)",", 1);
-                PRINTF("ByteString(%d): 0x%s\n", buf_len, string_value);
+                PRINTF("ByteString(%d): 0x%s\n", byte_string_length, string_value);
                 break;
             }
 
             case CborTextStringType: {
-                uint8_t buf[250];
-                size_t buf_len;
-                err = cbor_read_string_or_byte_string(it, (char*)buf, &buf_len, true);
+                uint8_t text_string_data[CBOR_STRING_BUFFER_SIZE];
+                size_t text_string_length;
+                err = cbor_read_string_or_byte_string(it, (char*)text_string_data, &text_string_length, sizeof(text_string_data), true);
                 if (err) return err;
-                // null terminate the string
-                buf[buf_len] = '\0';
-                char temp2[256];
-                snprintf(temp2, sizeof(temp2), "\"%s\",", buf);
-                PRINTF("%s", temp2);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                // null terminate the string (with bounds checking)
+                if (text_string_length < sizeof(text_string_data)) {
+                    text_string_data[text_string_length] = '\0';
+                } else {
+                    // If the string fills the entire buffer, we can't null terminate
+                    // This should not happen due to the bounds checking in cbor_read_string_or_byte_string
+                    PRINTF("Warning: text string fills entire buffer, cannot null terminate\n");
+                }
+                char text_display[CBOR_TEXT_DISPLAY_SIZE];
+                snprintf(text_display, sizeof(text_display), "\"%s\",", text_string_data);
+                PRINTF("%s", text_display);
+                add_char_array_to_buffer(out_buf, text_display, strlen(text_display));
                 break;
             }
 
             case CborTagType: {
                 CborTag tag;
-                char temp2[16];
+                char tag_number[16];
                 cbor_value_get_tag(it, &tag);  // can't fail
-                format_u64(temp2, sizeof(temp2), tag);
-                char tag_str[32];
-                snprintf(tag_str, sizeof(tag_str), "Tag(%s):", temp2);
+                format_u64(tag_number, sizeof(tag_number), tag);
+                char tag_str[CBOR_TAG_STRING_SIZE];
+                snprintf(tag_str, sizeof(tag_str), "Tag(%s):", tag_number);
                 PRINTF("%s", tag_str);
                 add_char_array_to_buffer(out_buf, tag_str, strlen(tag_str));
 
@@ -161,9 +181,9 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
             }
 
             case CborSimpleType: {
-                uint8_t temp_type;
-                cbor_value_get_simple_type(it, &temp_type);  // can't fail
-                PRINTF("simple(%d)\n", temp_type);
+                uint8_t simple_type_value;
+                cbor_value_get_simple_type(it, &simple_type_value);  // can't fail
+                PRINTF("simple(%d)\n", simple_type_value);
                 break;
             }
 
@@ -189,22 +209,22 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
             }
 
             case CborFloatType: {
-                float f;
-                char temp2[32];
-                cbor_value_get_float(it, &f);
-                snprintf(temp2, sizeof(temp2), "Float:0x%08x,", (uint32_t)f);
-                PRINTF("Float: 0x%08x\n", (uint32_t)f);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                float float_value;
+                char float_display[CBOR_FLOAT_DISPLAY_SIZE];
+                cbor_value_get_float(it, &float_value);
+                snprintf(float_display, sizeof(float_display), "Float:0x%08x,", (uint32_t)float_value);
+                PRINTF("Float: 0x%08x\n", (uint32_t)float_value);
+                add_char_array_to_buffer(out_buf, float_display, strlen(float_display));
                 break;
             }
 
             case CborDoubleType: {
                 double val;
-                char temp2[32];
+                char double_display[CBOR_FLOAT_DISPLAY_SIZE];
                 cbor_value_get_double(it, &val);
-                snprintf(temp2, sizeof(temp2), "Double:0x%08x,", (uint32_t)val);
+                snprintf(double_display, sizeof(double_display), "Double:0x%08x,", (uint32_t)val);
                 PRINTF("Double: 0x%08x\n", (uint32_t)val);
-                add_char_array_to_buffer(out_buf, temp2, strlen(temp2));
+                add_char_array_to_buffer(out_buf, double_display, strlen(double_display));
                 break;
             }
 
@@ -243,7 +263,7 @@ bool parse_plt_cbor(uint8_t* cbor, size_t cbor_length) {
     char temp[MAX_PLT_DIPLAY_STR] = {0};
     buffer_t out_buf = {.ptr = (const uint8_t*)temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
     tag_list_t tag_list;  // initiate an empty tag_list_t
-    err = decode_cbor_recursive(&it, 0, &out_buf);
+    err = decode_cbor_recursive(&it, 0, &out_buf, MAX_PLT_DIPLAY_STR);
     if (err) {
         PRINTF("Error while decoding cbor\n");
         THROW(ERROR_PLT_CBOR_ERROR);
@@ -265,28 +285,12 @@ bool parse_plt_cbor(uint8_t* cbor, size_t cbor_length) {
     return true;
 }
 
-// Helper function to extract value between quotes or after colon
-static const char* find_substring(const char* haystack, const char* needle) {
-    const char* pos = haystack;
-    while (*pos) {
-        const char* h = pos;
-        const char* n = needle;
-        while (*h && *n && *h == *n) {
-            h++;
-            n++;
-        }
-        if (*n == '\0') return pos;
-        pos++;
-    }
-    return NULL;
-}
-
 static bool extract_field_value(const char* input,
                                 const char* field_name,
                                 char* output,
                                 size_t output_size) {
     // Look for pattern: "field_name":value
-    char pattern[64];
+    char pattern[CBOR_PATTERN_BUFFER_SIZE];
     snprintf(pattern, sizeof(pattern), "\"%s\":", field_name);
 
     const char* field_pos = find_substring(input, pattern);
@@ -355,10 +359,11 @@ static bool extract_recipient_address(const char* recipient_object,
             address[copy_len] = '\0';
             return true;
         }
+        // If we found an opening quote but no proper closing quote, this is malformed
+        return false;
     }
-
     // Check if it's already a plain address without quotes
-    if (recipient_object[0] != '{' && recipient_object[0] != '"') {
+    else if (recipient_object[0] != '{') {
         // Plain address string - just copy it
         size_t len = 0;
         while (recipient_object[len] && recipient_object[len] != ',' &&
@@ -421,7 +426,7 @@ static bool parse_single_operation(const char* operation_str, singlePLTOperation
             operation->availableFields |= PLT_FIELD_AMOUNT;
         }
 
-        char recipient_object[256];
+        char recipient_object[CBOR_OBJECT_BUFFER_SIZE];
         if (extract_field_value(operation_str,
                                 "recipient",
                                 recipient_object,
@@ -437,7 +442,7 @@ static bool parse_single_operation(const char* operation_str, singlePLTOperation
                strcmp(operation->operationType, "removeAllowList") == 0 ||
                strcmp(operation->operationType, "removeDenyList") == 0) {
         // addDenyList/addAllowList/removeAllowList/removeDenyList: target (address only)
-        char target_object[256];
+        char target_object[CBOR_OBJECT_BUFFER_SIZE];
         if (extract_field_value(operation_str, "target", target_object, sizeof(target_object))) {
             if (extract_recipient_address(target_object, operation->target, MAX_PLT_TARGET_STR)) {
                 operation->availableFields |= PLT_FIELD_TARGET;
@@ -448,11 +453,16 @@ static bool parse_single_operation(const char* operation_str, singlePLTOperation
         // mint/burn: amount only
         if (extract_field_value(operation_str, "amount", operation->amount, MAX_PLT_AMOUNT_STR)) {
             operation->availableFields |= PLT_FIELD_AMOUNT;
+        } else {
+            // Amount is required for mint/burn operations
+            return false;
         }
     } else if (strcmp(operation->operationType, "pause") == 0 ||
                strcmp(operation->operationType, "unpause") == 0) {
         // pause/unpause: no fields
         // availableFields already set to PLT_FIELD_NONE
+    } else {
+        return false;
     }
 
     return true;
@@ -498,7 +508,7 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
             if (brace_count == 0) {
                 // Extract this operation string
                 size_t opLen = pos - op_start;
-                char op_str[512];
+                char op_str[CBOR_OPERATION_BUFFER_SIZE];
                 if (opLen < sizeof(op_str)) {
                     memcpy(op_str, op_start, opLen);
                     op_str[opLen] = '\0';
@@ -612,7 +622,6 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
  * @note All sensitive data is cleared from memory on error conditions
  */
 void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more
-                                 //   bool isInitialCall
 ) {
     uint8_t remaining_data_length = lc;
 

@@ -216,6 +216,42 @@ Install the tests requirements :
 pip install -r tests/requirements.txt 
 ```
 
+**Troubleshooting Installation Issues:**
+
+If you encounter build errors with `coincurve` (a dependency of `ecdsa`), try the following solutions:
+
+**On macOS:**
+```shell
+# Install system dependencies
+brew install libffi openssl
+
+# Set environment variables for compilation
+export LDFLAGS="-L$(brew --prefix openssl)/lib"
+export CPPFLAGS="-I$(brew --prefix openssl)/include"
+
+# Then install requirements
+pip install -r tests/requirements.txt
+```
+
+**On Ubuntu/Debian:**
+```shell
+# Install system dependencies
+sudo apt-get update
+sudo apt-get install build-essential libffi-dev libssl-dev
+
+# Then install requirements
+pip install -r tests/requirements.txt
+```
+
+**Alternative approach (if coincurve continues to fail):**
+```shell
+# Install coincurve separately with pre-compiled wheels
+pip install coincurve --only-binary=coincurve
+
+# Then install the rest
+pip install -r tests/requirements.txt
+```
+
 Then you can :
 
 Run the functional tests (here for nanos+ but available for any device once you have built the binaries) :

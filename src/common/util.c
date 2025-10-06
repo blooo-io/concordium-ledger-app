@@ -133,7 +133,7 @@ int handleHeaderAndToAddress(uint8_t *cdata,
     remainingDataLength -= headerLength;
 
     // Extract the recipient address and add to the hash.
-    uint8_t toAddress[32];
+    uint8_t toAddress[COMMON_HASH_SIZE];
     if (remainingDataLength < 32) {
         THROW(ERROR_INVALID_TRANSACTION);
     }
@@ -221,7 +221,7 @@ void ensureNoError(cx_err_t errorCode) {
 void getPrivateKey(uint32_t *keyPathInput,
                    uint8_t keyPathLength,
                    cx_ecfp_private_key_t *privateKey) {
-    uint8_t privateKeyData[64];
+    uint8_t privateKeyData[COMMON_SIGNATURE_SIZE];
 
     // Invoke the device methods for generating a private key.
     // Wrap in try/finally to ensure that private key information is cleaned up, even if a system

@@ -18,6 +18,20 @@
 #include <parser.h>
 #include <base58.h>
 #include <glyphs.h>
+
+// Common buffer size constants used across the application
+#define COMMON_PRIVATE_KEY_SIZE      32   // Standard private key size
+#define COMMON_PUBLIC_KEY_SIZE       32   // Standard public key size
+#define COMMON_SIGNATURE_SIZE        64   // Standard signature size
+#define COMMON_HASH_SIZE             32   // Standard hash size
+#define COMMON_ADDRESS_SIZE          57   // Standard address size
+#define COMMON_DISPLAY_SIZE          255  // Standard display buffer size
+#define COMMON_AMOUNT_DISPLAY_SIZE   30   // Standard amount display size
+#define COMMON_URL_DISPLAY_SIZE      256  // Standard URL display size
+#define COMMON_MODULE_REF_SIZE       32   // Standard module reference size
+#define COMMON_THRESHOLD_SIZE        4    // Standard threshold size
+#define COMMON_TIMESTAMP_SIZE        8    // Standard timestamp size
+#define COMMON_COMMISSION_SIZE       8    // Standard commission rate size
 #include <limits.h>
 #include <format.h>
 
@@ -134,7 +148,7 @@ extern keyDerivationPath_t path;
 // and to keep track of the state of a multi command APDU flow.
 typedef struct {
     cx_sha256_t hash;
-    uint8_t transactionHash[32];
+    uint8_t transactionHash[COMMON_HASH_SIZE];
     int currentInstruction;
 } tx_state_t;
 extern tx_state_t global_tx_state;
@@ -142,14 +156,14 @@ extern tx_state_t global_tx_state;
 // Helper struct that is used to hold the account sender
 // address from an account transaction header.
 typedef struct {
-    uint8_t sender[57];
+    uint8_t sender[COMMON_ADDRESS_SIZE];
 } accountSender_t;
 extern accountSender_t global_account_sender;
 
 typedef struct {
     uint32_t cborLength;
     uint32_t displayUsed;
-    uint8_t display[255];
+    uint8_t display[COMMON_DISPLAY_SIZE];
     uint8_t majorType;
 } cborContext_t;
 

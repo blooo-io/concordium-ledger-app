@@ -53,7 +53,7 @@ void exportPrivateKeySeed(void) {
 }
 
 void exportPrivateKeyBls(void) {
-    uint8_t privateKey[32];
+    uint8_t privateKey[COMMON_PRIVATE_KEY_SIZE];
     BEGIN_TRY {
         TRY {
             uint8_t lastSubPath;
