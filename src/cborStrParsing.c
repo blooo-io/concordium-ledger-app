@@ -4,7 +4,6 @@
 #include "util.h"
 #include "common/stringUtils.h"
 
-
 typedef struct {
     union {
         int64_t signed_val;

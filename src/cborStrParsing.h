@@ -14,7 +14,7 @@
 #define CBOR_BASE58_ADDRESS_SIZE 57   // Buffer size for Base58 address
 #define CBOR_MANTISSA_SIZE       258  // Buffer size for mantissa string
 #define CBOR_EXPONENT_SIZE       32   // Buffer size for exponent string
-#define CBOR_TAG_PATTERN_SIZE   32   // Buffer size for tag pattern matching
+#define CBOR_TAG_PATTERN_SIZE    32   // Buffer size for tag pattern matching
 
 /*******************************************************************************
  * DATA STRUCTURES

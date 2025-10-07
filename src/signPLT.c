@@ -114,7 +114,8 @@ CborError decode_cbor_recursive(CborValue* it,
                 continue;
             }
             case CborIntegerType: {
-                char integer_value[CBOR_INTEGER_BUFFER_SIZE];    // Buffer for uint64 integer // formatting
+                char integer_value[CBOR_INTEGER_BUFFER_SIZE];    // Buffer for uint64 integer
+                                                                 // formatting
                 char integer_display[CBOR_INTEGER_PREFIX_SIZE];  // Buffer for "Int:" prefix +
                                                                  // uint64 integer
                 uint64_t raw_val = 0;
@@ -141,7 +142,7 @@ CborError decode_cbor_recursive(CborValue* it,
             case CborByteStringType: {
                 uint8_t byte_string_data[CBOR_STRING_BUFFER_SIZE];
                 size_t byte_string_length;
-                err = cbor_read_string_or_byte_string(it, 
+                err = cbor_read_string_or_byte_string(it,
                                                       (char*)byte_string_data,
                                                       &byte_string_length,
                                                       sizeof(byte_string_data),
