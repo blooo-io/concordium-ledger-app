@@ -2,7 +2,7 @@
 
 /**
  * @brief Find the first occurrence of a character in a string
- * 
+ *
  * Custom implementation of strchr to avoid standard library dependency.
  * Provides robust null pointer checking.
  */
@@ -20,10 +20,10 @@ const char* find_char(const char* str, char c) {
 
 /**
  * @brief Find the first occurrence of a substring in a string
- * 
+ *
  * Custom implementation of strstr to avoid standard library dependency.
  * This function provides robust null pointer checking and consistent behavior.
- * 
+ *
  * Reasons for custom implementation:
  * - Avoid potential security vulnerabilities in standard library implementations
  * - Ensure consistent behavior across different platforms
@@ -63,10 +63,10 @@ const char* find_substring(const char* haystack, const char* needle) {
 
 /**
  * @brief Find the matching closing delimiter for a given opening delimiter
- * 
+ *
  * This function handles nested delimiters by tracking depth levels.
  * Useful for parsing structured data with nested brackets, parentheses, etc.
- * 
+ *
  * @param start Pointer to the character after the opening delimiter
  * @param open_char The opening delimiter character
  * @param close_char The closing delimiter character

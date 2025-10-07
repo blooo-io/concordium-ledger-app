@@ -7,14 +7,14 @@
 #include "globals.h"
 
 // Buffer size constants for CBOR string parsing
-#define CBOR_NUMBER_FORMAT_SIZE      30   // Buffer size for number formatting
-#define CBOR_TAG_NUMBER_SIZE         22   // Buffer size for tag number string
-#define CBOR_COININFO_SIZE           16   // Buffer size for coin info display
-#define CBOR_ADDRESS_BYTES_SIZE      32   // Buffer size for address bytes
-#define CBOR_BASE58_ADDRESS_SIZE     57   // Buffer size for Base58 address
-#define CBOR_MANTISSA_SIZE           258  // Buffer size for mantissa string
-#define CBOR_EXPONENT_SIZE           32   // Buffer size for exponent string
-#define CBOR_TAG_PATTERN_SIZE        32   // Buffer size for tag pattern matching
+#define CBOR_NUMBER_FORMAT_SIZE  30   // Buffer size for number formatting
+#define CBOR_TAG_NUMBER_SIZE     22   // Buffer size for tag number string
+#define CBOR_COININFO_SIZE       16   // Buffer size for coin info display
+#define CBOR_ADDRESS_BYTES_SIZE  32   // Buffer size for address bytes
+#define CBOR_BASE58_ADDRESS_SIZE 57   // Buffer size for Base58 address
+#define CBOR_MANTISSA_SIZE       258  // Buffer size for mantissa string
+#define CBOR_EXPONENT_SIZE       32   // Buffer size for exponent string
+#define CBOR_TAG_PATTERN_SIZE   32   // Buffer size for tag pattern matching
 
 /*******************************************************************************
  * DATA STRUCTURES

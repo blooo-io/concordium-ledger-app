@@ -36,7 +36,9 @@ bool cbor_read_string_or_byte_string(CborValue* it,
 
     // Check for buffer overflow
     if (*output_size > buffer_size) {
-        PRINTF("Buffer overflow: string size %zu exceeds buffer size %zu\n", *output_size, buffer_size);
+        PRINTF("Buffer overflow: string size %zu exceeds buffer size %zu\n",
+               *output_size,
+               buffer_size);
         return true;
     }
 
@@ -63,7 +65,10 @@ void add_char_array_to_buffer(buffer_t* dst, char* src, size_t src_size) {
     dst->offset += src_size;
 }
 
-CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_buf, size_t buffer_size) {
+CborError decode_cbor_recursive(CborValue* it,
+                                int nesting_level,
+                                buffer_t* out_buf,
+                                size_t buffer_size) {
     const char* temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
@@ -71,7 +76,9 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
 
         // Check if we have enough space in the buffer before proceeding
         if (out_buf->offset >= buffer_size) {
-            PRINTF("Buffer overflow: offset %zu >= buffer size %zu\n", out_buf->offset, buffer_size);
+            PRINTF("Buffer overflow: offset %zu >= buffer size %zu\n",
+                   out_buf->offset,
+                   buffer_size);
             return CborErrorInternalError;  // Return error to stop recursion
         }
 
@@ -107,8 +114,9 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
                 continue;
             }
             case CborIntegerType: {
-                char integer_value[CBOR_INTEGER_BUFFER_SIZE];  // Buffer for uint64 integer formatting
-                char integer_display[CBOR_INTEGER_PREFIX_SIZE];  // Buffer for "Int:" prefix + uint64 integer
+                char integer_value[CBOR_INTEGER_BUFFER_SIZE];    // Buffer for uint64 integer // formatting
+                char integer_display[CBOR_INTEGER_PREFIX_SIZE];  // Buffer for "Int:" prefix +
+                                                                 // uint64 integer
                 uint64_t raw_val = 0;
 
                 // Get the raw integer value first
@@ -133,10 +141,17 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
             case CborByteStringType: {
                 uint8_t byte_string_data[CBOR_STRING_BUFFER_SIZE];
                 size_t byte_string_length;
-                err = cbor_read_string_or_byte_string(it, (char*)byte_string_data, &byte_string_length, sizeof(byte_string_data), false);
+                err = cbor_read_string_or_byte_string(it, 
+                                                      (char*)byte_string_data,
+                                                      &byte_string_length,
+                                                      sizeof(byte_string_data),
+                                                      false);
                 if (err) return err;
                 char string_value[CBOR_HEX_DISPLAY_SIZE] = {0};
-                if (format_hex(byte_string_data, byte_string_length, string_value, sizeof(string_value)) == -1) {
+                if (format_hex(byte_string_data,
+                               byte_string_length,
+                               string_value,
+                               sizeof(string_value)) == -1) {
                     PRINTF("format_hex error\n");
                     THROW(ERROR_PLT_CBOR_ERROR);
                 }
@@ -150,14 +165,19 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
             case CborTextStringType: {
                 uint8_t text_string_data[CBOR_STRING_BUFFER_SIZE];
                 size_t text_string_length;
-                err = cbor_read_string_or_byte_string(it, (char*)text_string_data, &text_string_length, sizeof(text_string_data), true);
+                err = cbor_read_string_or_byte_string(it,
+                                                      (char*)text_string_data,
+                                                      &text_string_length,
+                                                      sizeof(text_string_data),
+                                                      true);
                 if (err) return err;
                 // null terminate the string (with bounds checking)
                 if (text_string_length < sizeof(text_string_data)) {
                     text_string_data[text_string_length] = '\0';
                 } else {
                     // If the string fills the entire buffer, we can't null terminate
-                    // This should not happen due to the bounds checking in cbor_read_string_or_byte_string
+                    // This should not happen due to the bounds checking in
+                    // cbor_read_string_or_byte_string
                     PRINTF("Warning: text string fills entire buffer, cannot null terminate\n");
                 }
                 char text_display[CBOR_TEXT_DISPLAY_SIZE];
@@ -212,7 +232,10 @@ CborError decode_cbor_recursive(CborValue* it, int nesting_level, buffer_t* out_
                 float float_value;
                 char float_display[CBOR_FLOAT_DISPLAY_SIZE];
                 cbor_value_get_float(it, &float_value);
-                snprintf(float_display, sizeof(float_display), "Float:0x%08x,", (uint32_t)float_value);
+                snprintf(float_display,
+                         sizeof(float_display),
+                         "Float:0x%08x,",
+                         (uint32_t)float_value);
                 PRINTF("Float: 0x%08x\n", (uint32_t)float_value);
                 add_char_array_to_buffer(out_buf, float_display, strlen(float_display));
                 break;
@@ -621,8 +644,7 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
  * @note User approval is required via UI display before transaction completion
  * @note All sensitive data is cleared from memory on error conditions
  */
-void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more
-) {
+void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more) {
     uint8_t remaining_data_length = lc;
 
     if (chunk == 0) {

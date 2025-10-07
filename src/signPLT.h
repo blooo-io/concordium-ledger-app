@@ -12,22 +12,22 @@
 #define MAX_PLT_DIPLAY_STR          2000
 
 // Buffer size constants for CBOR parsing and display
-#define CBOR_INTEGER_BUFFER_SIZE    25   // Buffer size for uint64 integer formatting
-#define CBOR_INTEGER_PREFIX_SIZE    30   // Buffer size for "Int:" prefix + uint64 integer
-#define CBOR_STRING_BUFFER_SIZE     250  // Buffer size for CBOR string/byte string parsing
-#define CBOR_HEX_DISPLAY_SIZE       100  // Buffer size for hex string display
-#define CBOR_TEXT_DISPLAY_SIZE      256  // Buffer size for text string display
-#define CBOR_TAG_STRING_SIZE        32   // Buffer size for tag string formatting
-#define CBOR_PATTERN_BUFFER_SIZE    64   // Buffer size for pattern matching
-#define CBOR_OBJECT_BUFFER_SIZE     256  // Buffer size for object display
-#define CBOR_OPERATION_BUFFER_SIZE  512  // Buffer size for operation display
-#define CBOR_FLOAT_DISPLAY_SIZE     32   // Buffer size for float/double display
-#define MAX_PLT_OPERATION_TYPE      32
-#define MAX_PLT_AMOUNT_STR          32
-#define MAX_PLT_RECIPIENT_STR       128
-#define MAX_PLT_TARGET_STR          128
-#define MAX_PLT_OPERATIONS          10
-#define MAX_PLT_SUMMARY_STR         64
+#define CBOR_INTEGER_BUFFER_SIZE   25   // Buffer size for uint64 integer formatting
+#define CBOR_INTEGER_PREFIX_SIZE   30   // Buffer size for "Int:" prefix + uint64 integer
+#define CBOR_STRING_BUFFER_SIZE    250  // Buffer size for CBOR string/byte string parsing
+#define CBOR_HEX_DISPLAY_SIZE      100  // Buffer size for hex string display
+#define CBOR_TEXT_DISPLAY_SIZE     256  // Buffer size for text string display
+#define CBOR_TAG_STRING_SIZE       32   // Buffer size for tag string formatting
+#define CBOR_PATTERN_BUFFER_SIZE   64   // Buffer size for pattern matching
+#define CBOR_OBJECT_BUFFER_SIZE    256  // Buffer size for object display
+#define CBOR_OPERATION_BUFFER_SIZE 512  // Buffer size for operation display
+#define CBOR_FLOAT_DISPLAY_SIZE    32   // Buffer size for float/double display
+#define MAX_PLT_OPERATION_TYPE     32
+#define MAX_PLT_AMOUNT_STR         32
+#define MAX_PLT_RECIPIENT_STR      128
+#define MAX_PLT_TARGET_STR         128
+#define MAX_PLT_OPERATIONS         10
+#define MAX_PLT_SUMMARY_STR        64
 
 void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more);
 

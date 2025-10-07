@@ -5,8 +5,6 @@
 #include "common/stringUtils.h"
 
 
-
-
 typedef struct {
     union {
         int64_t signed_val;
@@ -20,7 +18,7 @@ typedef struct {
 static parsed_number_t parse_number(const char* str, const char* end) {
     parsed_number_t result = {0};
     result.is_valid = false;  // Initialize as invalid
-    
+
     uint64_t magnitude = 0;
     bool is_negative = false;
     const char* current = str;
@@ -42,33 +40,33 @@ static parsed_number_t parse_number(const char* str, const char* end) {
     // Parse digits
     while (current < end && *current >= '0' && *current <= '9') {
         has_digits = true;
-        
+
         // Check for overflow before multiplication
         if (magnitude > (UINT64_MAX / 10)) {
             return result;  // Overflow would occur
         }
-        
+
         uint64_t new_magnitude = magnitude * 10;
-        
+
         // Check for overflow before addition
         if (new_magnitude > (UINT64_MAX - (*current - '0'))) {
             return result;  // Overflow would occur
         }
-        
+
         magnitude = new_magnitude + (*current - '0');
         current++;
     }
-    
+
     // Check if we have any digits
     if (!has_digits) {
         return result;  // No digits found
     }
-    
+
     // Check if there are any non-whitespace characters after the number
     while (current < end && (*current == ' ' || *current == '\t')) {
         current++;
     }
-    
+
     if (current < end) {
         return result;  // Invalid characters found after number
     }
@@ -85,7 +83,7 @@ static parsed_number_t parse_number(const char* str, const char* end) {
         result.is_signed = false;
         result.value.unsigned_val = magnitude;
     }
-    
+
     result.is_valid = true;
     return result;
 }
@@ -527,16 +525,16 @@ bool parse_tag_24(tag_info_t* tag) {
         PRINTF("Failed to convert hex string to ASCII\n");
         return false;
     }
-    
+
     // Get the actual length of the converted ASCII string
     size_t ascii_length = strlen(tag->parsedContent);
-    
+
     // Check bounds before writing comma and null terminator
     if (ascii_length + 2 >= sizeof(tag->parsedContent)) {
         PRINTF("Buffer too small for comma and null terminator\n");
         return false;
     }
-    
+
     tag->parsedContent[ascii_length] = ',';
     tag->parsedContent[ascii_length + 1] = '\0';
 
