@@ -42,7 +42,7 @@ int exportNewPathPrivateKeysForPurpose(uint8_t purpose,
     uint32_t derivationPath[MAX_DERIVATION_PATH_LENGTH];
     uint8_t derivationPathLength = 4;
     cx_ecfp_private_key_t tempPrivateKeyEd25519;
-    uint8_t tempPrivateKey[32];
+    uint8_t tempPrivateKey[COMMON_PRIVATE_KEY_SIZE];
 
     uint8_t keysToExport[MAX_KEYS_TO_EXPORT] = {0, 0, 0};
     uint8_t keysToExportLength = 0;
@@ -218,4 +218,6 @@ void sendPrivateKeysNewPath(void) {
     }
     memmove(G_io_apdu_buffer, ctx->outputPrivateKeys, ctx->privateKeysLength);
     sendSuccess(ctx->privateKeysLength);
+    explicit_bzero(ctx->outputPrivateKeys, sizeof(ctx->outputPrivateKeys));
+    ctx->privateKeysLength = 0;
 }

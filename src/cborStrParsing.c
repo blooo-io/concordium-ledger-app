@@ -2,72 +2,7 @@
 #include "ledger_assert.h"
 #include "cborStrParsing.h"
 #include "util.h"
-
-// Function to find matching bracket/brace
-static char* find_matching_delimiter(char* start, char open_char, char close_char) {
-    int depth = 1;
-    char* current = start + 1;  // Skip the opening delimiter
-
-    while (*current && depth > 0) {
-        if (*current == open_char) {
-            depth++;
-        } else if (*current == close_char) {
-            depth--;
-        }
-        current++;
-    }
-
-    if (depth == 0) {
-        return current - 1;
-    } else {
-        return NULL;
-    }
-}
-
-// Custom string search function (replacement for strstr)
-static const char* find_substring(const char* haystack, const char* needle) {
-    if (!haystack || !needle || !*needle) {
-        return NULL;
-    }
-
-    const char* h = haystack;
-    const char* n = needle;
-
-    while (*h) {
-        const char* h_start = h;
-        const char* n_current = n;
-
-        // Try to match the needle starting at current position
-        while (*h && *n_current && *h == *n_current) {
-            h++;
-            n_current++;
-        }
-
-        // If we reached the end of needle, we found a match
-        if (!*n_current) {
-            return h_start;
-        }
-
-        // Reset and try next position
-        h = h_start + 1;
-    }
-
-    return NULL;
-}
-
-// Custom character search function (replacement for strchr)
-static const char* find_char(const char* str, char c) {
-    if (!str) return NULL;
-
-    while (*str) {
-        if (*str == c) {
-            return str;
-        }
-        str++;
-    }
-
-    return NULL;
-}
+#include "common/stringUtils.h"
 
 typedef struct {
     union {
@@ -75,16 +10,18 @@ typedef struct {
         uint64_t unsigned_val;
     } value;
     bool is_signed;
+    bool is_valid;  // Add validation flag
 } parsed_number_t;
 
 // Parse a number from string that can handle full uint64_t range
 static parsed_number_t parse_number(const char* str, const char* end) {
     parsed_number_t result = {0};
+    result.is_valid = false;  // Initialize as invalid
+
     uint64_t magnitude = 0;
-    char formated_num[30];
-    char result_str[30];
     bool is_negative = false;
     const char* current = str;
+    bool has_digits = false;
 
     // Skip whitespace
     while (current < end && (*current == ' ' || *current == '\t')) {
@@ -101,23 +38,52 @@ static parsed_number_t parse_number(const char* str, const char* end) {
 
     // Parse digits
     while (current < end && *current >= '0' && *current <= '9') {
-        magnitude = magnitude * 10 + (*current - '0');
+        has_digits = true;
+
+        // Check for overflow before multiplication
+        if (magnitude > (UINT64_MAX / 10)) {
+            return result;  // Overflow would occur
+        }
+
+        uint64_t new_magnitude = magnitude * 10;
+
+        // Check for overflow before addition
+        if (new_magnitude > (UINT64_MAX - (*current - '0'))) {
+            return result;  // Overflow would occur
+        }
+
+        magnitude = new_magnitude + (*current - '0');
         current++;
     }
 
-    // Store the result based on sign
+    // Check if we have any digits
+    if (!has_digits) {
+        return result;  // No digits found
+    }
+
+    // Check if there are any non-whitespace characters after the number
+    while (current < end && (*current == ' ' || *current == '\t')) {
+        current++;
+    }
+
+    if (current < end) {
+        return result;  // Invalid characters found after number
+    }
+
+    // Store the result based on sign with proper bounds checking
     if (is_negative) {
+        // Check if magnitude fits in int64_t range
+        if (magnitude > (uint64_t)INT64_MAX) {
+            return result;  // Magnitude too large for int64_t
+        }
         result.is_signed = true;
         result.value.signed_val = -(int64_t)magnitude;
-        format_i64(formated_num, sizeof(formated_num), result.value.signed_val);
     } else {
         result.is_signed = false;
         result.value.unsigned_val = magnitude;
-        format_u64(formated_num, sizeof(formated_num), result.value.unsigned_val);
     }
 
-    snprintf(result_str, sizeof(result_str), "%s", formated_num);
-
+    result.is_valid = true;
     return result;
 }
 
@@ -132,7 +98,6 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         tag_list->tags[i].tag_number = 0;
         tag_list->tags[i].content_length = 0;
         memset(tag_list->tags[i].parsedContent, 0, sizeof(tag_list->tags[i].parsedContent));
-        tag_list->tags[i].content_length = 0;
 
         memset(tag_list->tags[i].content, 0, MAX_TAG_CONTENT_SIZE);
     }
@@ -149,6 +114,10 @@ bool extract_tags_ledger(const char* input, tag_list_t* tag_list) {
         }
 
         parsed_number_t num = parse_number(tag_start, tag_end);
+        if (!num.is_valid) {
+            PRINTF("Invalid tag number format\n");
+            return false;
+        }
         if (num.is_signed) {
             PRINTF("Tag number should be positive\n");
             return false;
@@ -233,16 +202,14 @@ tag_info_t* find_tag_by_number(tag_list_t* tag_list, uint64_t tag_number) {
 // Function to print extracted tags (using PRINTF)
 void print_tags_ledger(const tag_list_t* tag_list) {
     if (!tag_list) return;
-    char tag_number_str[22];
+    char tag_number_str[CBOR_TAG_NUMBER_SIZE];
     PRINTF("Extracted %d tags:\n", (int)tag_list->count);
     for (size_t i = 0; i < tag_list->count; i++) {
         format_i64(tag_number_str, sizeof(tag_number_str), tag_list->tags[i].tag_number);
         if (tag_list->tags[i].is_valid) {
             PRINTF("Tag %d:\n", (int)(i + 1));
             PRINTF("  Number: %s\n", tag_number_str);
-            PRINTF("  Content: %s\n",
-                   //    (int)tag_list->tags[i].content_length,
-                   tag_list->tags[i].content);
+            PRINTF("  Content: %s\n", tag_list->tags[i].content);
             PRINTF("  Length: %d\n", (int)tag_list->tags[i].content_length);
         }
     }
@@ -268,7 +235,7 @@ bool parse_tag_40307(tag_info_t* tag) {
 
     // Extract coin info from Tag(40305):{Int:1,Int:919,}
     const char* coininfo_start = find_substring(content, "Tag(40305):{Int:1,Int:");
-    char coininfo[16] = "none";  // Default value
+    char coininfo[CBOR_COININFO_SIZE] = "none";  // Default value
 
     if (coininfo_start) {
         // Skip to the coin info number after "Tag(40305):{Int:1,Int:"
@@ -333,14 +300,14 @@ bool parse_tag_40307(tag_info_t* tag) {
     }
 
     // Convert hex string to bytes using utility function
-    uint8_t address_bytes[32];
+    uint8_t address_bytes[CBOR_ADDRESS_BYTES_SIZE];
     if (!hex_string_to_bytes(hex_start, hex_length, address_bytes, sizeof(address_bytes))) {
         PRINTF("Failed to convert hex string to bytes\n");
         return false;
     }
 
     // Convert to base58 address format
-    char base58_address[57];  // Base58 address needs ~57 chars
+    char base58_address[CBOR_BASE58_ADDRESS_SIZE];  // Base58 address needs ~57 chars
     size_t base58_length = sizeof(base58_address);
 
     if (base58check_encode(address_bytes,
@@ -351,7 +318,10 @@ bool parse_tag_40307(tag_info_t* tag) {
         return false;
     }
     // Hack for the address to be displayed correctly on the screen
-    base58_address[50] = '\0';
+    // Ensure we don't write beyond the buffer bounds
+    if (base58_length > 50) {
+        base58_address[50] = '\0';
+    }
 
     // Format the output with base58 address (without coinInfo complexity)
     snprintf(tag->parsedContent, MAX_TAG_PARSED_CONTENT_SIZE, "\"%s\"", base58_address);
@@ -393,6 +363,10 @@ bool parse_tag_4(tag_info_t* tag) {
 
     // Parse the exponent, it is supposed to be negative
     parsed_number_t num = parse_number(exponent_start, exponent_end);
+    if (!num.is_valid) {
+        PRINTF("Invalid exponent format\n");
+        return false;
+    }
     if (!num.is_signed && num.value.unsigned_val != 0) {
         PRINTF("Warning: positive exponent %llu found\n",
                (unsigned long long)num.value.unsigned_val);
@@ -418,6 +392,10 @@ bool parse_tag_4(tag_info_t* tag) {
 
     // Parse the mantissa, it is supposed to be positive
     num = parse_number(mantissa_start, mantissa_end);
+    if (!num.is_valid) {
+        PRINTF("Invalid mantissa format\n");
+        return false;
+    }
     if (num.is_signed) {
         PRINTF("Warning: negative mantissa %lld found\n", (long long)num.value.signed_val);
         return false;
@@ -432,7 +410,7 @@ bool parse_tag_4(tag_info_t* tag) {
     int64_t abs_exponent = -exponent;
 
     // Convert mantissa to string first to get its length
-    char mantissa_str[258];
+    char mantissa_str[CBOR_MANTISSA_SIZE];
     if (!format_u64(mantissa_str, sizeof(mantissa_str), mantissa)) {
         PRINTF("Failed to format mantissa\n");
         return false;
@@ -442,7 +420,7 @@ bool parse_tag_4(tag_info_t* tag) {
     // Handle extreme cases with scientific notation or sensible limits
     if (abs_exponent > 50) {
         // For very negative exponents, use scientific notation: mantissa * 10^exponent
-        char exponent_str[32];
+        char exponent_str[CBOR_EXPONENT_SIZE];
         format_i64(exponent_str, sizeof(exponent_str), exponent);
         snprintf(tag->parsedContent,
                  MAX_TAG_PARSED_CONTENT_SIZE,
@@ -471,7 +449,7 @@ bool parse_tag_4(tag_info_t* tag) {
         // Limit the number of leading zeros to keep output readable
         if (zeros > 15) {
             // Use scientific notation for very small numbers
-            char exponent_str[32];
+            char exponent_str[CBOR_EXPONENT_SIZE];
             format_i64(exponent_str, sizeof(exponent_str), exponent);
             snprintf(tag->parsedContent,
                      MAX_TAG_PARSED_CONTENT_SIZE,
@@ -546,8 +524,18 @@ bool parse_tag_24(tag_info_t* tag) {
         PRINTF("Failed to convert hex string to ASCII\n");
         return false;
     }
-    tag->parsedContent[hex_length] = ',';
-    tag->parsedContent[hex_length + 1] = '\0';
+
+    // Get the actual length of the converted ASCII string
+    size_t ascii_length = strlen(tag->parsedContent);
+
+    // Check bounds before writing comma and null terminator
+    if (ascii_length + 2 >= sizeof(tag->parsedContent)) {
+        PRINTF("Buffer too small for comma and null terminator\n");
+        return false;
+    }
+
+    tag->parsedContent[ascii_length] = ',';
+    tag->parsedContent[ascii_length + 1] = '\0';
 
     PRINTF("Parsed tag 24: %s\n", tag->parsedContent);
     return true;
@@ -584,8 +572,8 @@ bool replace_tag_with_parsed_content(buffer_t* buffer, const tag_info_t* tag) {
     }
 
     // Create the search pattern ",Tag(tag_number):"
-    char tag_pattern[32];
-    char tag_number_str[22];
+    char tag_pattern[CBOR_TAG_PATTERN_SIZE];
+    char tag_number_str[CBOR_TAG_NUMBER_SIZE];
     format_i64(tag_number_str, sizeof(tag_number_str), tag->tag_number);
     snprintf(tag_pattern, sizeof(tag_pattern), ",Tag(%s):", tag_number_str);
 
@@ -785,14 +773,14 @@ bool parse_tags_in_buffer(buffer_t* buffer, tag_list_t* tag_list) {
     print_tags_ledger(tag_list);
 
     PRINTF("buffer before interpretation and replacement: %s\n", buffer->ptr);
-    bool good1 = false;
-    bool good2 = false;
+    bool tag_interpretation_success = false;
+    bool tag_replacement_success = false;
     for (size_t i = 0; i < tag_list->count; i++) {
         if (tag_list->tags[i].is_valid) {
-            good1 = interpret_tag(&tag_list->tags[i]);
-            good2 = replace_tag_with_parsed_content(buffer, &tag_list->tags[i]);
+            tag_interpretation_success = interpret_tag(&tag_list->tags[i]);
+            tag_replacement_success = replace_tag_with_parsed_content(buffer, &tag_list->tags[i]);
         }
-        if (!good1 || !good2) {
+        if (!tag_interpretation_success || !tag_replacement_success) {
             PRINTF("Error while interpreting or replacing tags\n");
             return false;
         }

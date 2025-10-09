@@ -394,6 +394,7 @@ static void indent(int nestingLevel) {
 bool cbor_read_string_or_byte_string(CborValue *it,
                                      char *output_ptr,
                                      size_t *output_size,
+                                     size_t buffer_size,
                                      bool isString) {
     if (isString) {
         LEDGER_ASSERT_BOOL(cbor_value_is_text_string(it), "expected string did not get it");
@@ -410,6 +411,12 @@ bool cbor_read_string_or_byte_string(CborValue *it,
            string_ptr);
     PRINTF("[standalone_plt_fuzzer.c] (cbor_read_string_or_byte_string) - size: %d\n",
            (int)*output_size);
+
+    // Check for buffer overflow
+    if (*output_size > buffer_size) {
+        PRINTF("Buffer overflow: string size %zu exceeds buffer size %zu\n", *output_size, buffer_size);
+        return true;
+    }
 
     // Copy the string data to the output buffer
     if (*output_size > 0 && output_ptr != NULL) {
@@ -450,11 +457,17 @@ bool add_char_array_to_buffer(buffer_t *dst, char *src, size_t src_size) {
 // Because of the changes we made to add_char_array_to_buffer, we need to edit this function
 // Now there is an if statement that checks the return value of add_char_array_to_buffer and
 // returns the appropriate error code.
-CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_buf) {
+CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_buf, size_t buffer_size) {
     const char *temp;
     while (!cbor_value_at_end(it)) {
         CborError err;
         CborType type = cbor_value_get_type(it);
+
+        // Check if we have enough space in the buffer before proceeding
+        if (out_buf->offset >= buffer_size) {
+            PRINTF("Buffer overflow: offset %zu >= buffer size %zu\n", out_buf->offset, buffer_size);
+            return CborUnknownError;  // Return error to stop recursion
+        }
 
         indent(nestingLevel);
         switch (type) {
@@ -476,7 +489,7 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
 
                 err = cbor_value_enter_container(it, &recursed);
                 if (err) return err;  // parse error
-                err = decode_cbor_recursive(&recursed, nestingLevel + 1, out_buf);
+                err = decode_cbor_recursive(&recursed, nestingLevel + 1, out_buf, buffer_size);
                 if (err) return err;  // parse error
                 err = cbor_value_leave_container(it, &recursed);
                 if (err) return err;  // parse error
@@ -521,7 +534,7 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
             case CborByteStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, false);
+                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, sizeof(buf), false);
                 if (err) return err;
                 char string_value[100] = {0};
                 if (format_hex(buf, buf_len, string_value, sizeof(string_value)) == -1) {
@@ -544,7 +557,7 @@ CborError decode_cbor_recursive(CborValue *it, int nestingLevel, buffer_t *out_b
             case CborTextStringType: {
                 uint8_t buf[250];
                 size_t buf_len;
-                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, true);
+                err = cbor_read_string_or_byte_string(it, (char *)buf, &buf_len, sizeof(buf), true);
                 if (err) return err;
                 // null terminate the string
                 buf[buf_len] = '\0';
@@ -669,7 +682,7 @@ bool parse_plt_cbor(uint8_t *cbor, size_t cborLength) {
     char temp[MAX_PLT_DIPLAY_STR] = {0};
     buffer_t out_buf = {.ptr = (const uint8_t *)temp, .size = MAX_PLT_DIPLAY_STR, .offset = 0};
     tag_list_t tag_list;  // initiate an empty tag_list_t
-    err = decode_cbor_recursive(&it, 0, &out_buf);
+    err = decode_cbor_recursive(&it, 0, &out_buf, MAX_PLT_DIPLAY_STR);
     if (err) {
         PRINTF("Error while decoding cbor\n");
         THROW_BOOL(ERROR_INVALID_PARAM);
@@ -680,7 +693,7 @@ bool parse_plt_cbor(uint8_t *cbor, size_t cborLength) {
         THROW(ERROR_INVALID_PARAM);
     }
     if (sizeof(ctx->pltOperationDisplay) < out_buf.size + 1) {
-        PRINTF("display str is too small for value %d < %d\n",
+        PRINTF("display str is too small for value %zu < %zu\n",
                sizeof(ctx->pltOperationDisplay),
                out_buf.size);
         THROW(ERROR_BUFFER_OVERFLOW);
