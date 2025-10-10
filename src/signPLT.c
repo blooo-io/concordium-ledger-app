@@ -172,9 +172,9 @@ CborError decode_cbor_recursive(CborValue* it,
                                                       sizeof(text_string_data),
                                                       true);
                 if (err) return err;
-                
+
                 char text_display[CBOR_TEXT_DISPLAY_SIZE];
-                
+
                 // Handle null termination safely
                 if (text_string_length < sizeof(text_string_data)) {
                     // Normal case: we have space for null terminator
@@ -189,7 +189,7 @@ CborError decode_cbor_recursive(CborValue* it,
                              (int)text_string_length,
                              text_string_data);
                 }
-                
+
                 PRINTF("%s", text_display);
                 add_char_array_to_buffer(out_buf, text_display, strlen(text_display));
                 break;
@@ -240,7 +240,10 @@ CborError decode_cbor_recursive(CborValue* it,
                 float float_value;
                 char float_display[CBOR_FLOAT_DISPLAY_SIZE];
                 cbor_value_get_float(it, &float_value);
-                snprintf(float_display, sizeof(float_display), "Float:0x%08x,", (uint32_t)float_value);
+                snprintf(float_display,
+                         sizeof(float_display),
+                         "Float:0x%08x,",
+                         (uint32_t)float_value);
                 PRINTF("Float: 0x%08x\n", (uint32_t)float_value);
                 add_char_array_to_buffer(out_buf, float_display, strlen(float_display));
                 break;
@@ -649,8 +652,7 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
  * @note User approval is required via UI display before transaction completion
  * @note All sensitive data is cleared from memory on error conditions
  */
-void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more
-) {
+void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more) {
     uint8_t remaining_data_length = lc;
 
     if (chunk == 0) {
