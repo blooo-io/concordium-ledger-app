@@ -172,17 +172,24 @@ CborError decode_cbor_recursive(CborValue* it,
                                                       sizeof(text_string_data),
                                                       true);
                 if (err) return err;
-                // null terminate the string (with bounds checking)
-                if (text_string_length < sizeof(text_string_data)) {
-                    text_string_data[text_string_length] = '\0';
-                } else {
-                    // If the string fills the entire buffer, we can't null terminate
-                    // This should not happen due to the bounds checking in
-                    // cbor_read_string_or_byte_string
-                    PRINTF("Warning: text string fills entire buffer, cannot null terminate\n");
-                }
+                
                 char text_display[CBOR_TEXT_DISPLAY_SIZE];
-                snprintf(text_display, sizeof(text_display), "\"%s\",", text_string_data);
+                
+                // Handle null termination safely
+                if (text_string_length < sizeof(text_string_data)) {
+                    // Normal case: we have space for null terminator
+                    text_string_data[text_string_length] = '\0';
+                    snprintf(text_display, sizeof(text_display), "\"%s\",", text_string_data);
+                } else {
+                    // Edge case: string fills entire buffer, cannot null terminate
+                    // Use snprintf with precision to limit the number of characters read
+                    snprintf(text_display,
+                             sizeof(text_display),
+                             "\"%.*s\",",
+                             (int)text_string_length,
+                             text_string_data);
+                }
+                
                 PRINTF("%s", text_display);
                 add_char_array_to_buffer(out_buf, text_display, strlen(text_display));
                 break;
@@ -233,10 +240,7 @@ CborError decode_cbor_recursive(CborValue* it,
                 float float_value;
                 char float_display[CBOR_FLOAT_DISPLAY_SIZE];
                 cbor_value_get_float(it, &float_value);
-                snprintf(float_display,
-                         sizeof(float_display),
-                         "Float:0x%08x,",
-                         (uint32_t)float_value);
+                snprintf(float_display, sizeof(float_display), "Float:0x%08x,", (uint32_t)float_value);
                 PRINTF("Float: 0x%08x\n", (uint32_t)float_value);
                 add_char_array_to_buffer(out_buf, float_display, strlen(float_display));
                 break;
@@ -645,7 +649,8 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
  * @note User approval is required via UI display before transaction completion
  * @note All sensitive data is cleared from memory on error conditions
  */
-void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more) {
+void handle_sign_plt_transaction(uint8_t* cdata, uint8_t lc, uint8_t chunk, bool more
+) {
     uint8_t remaining_data_length = lc;
 
     if (chunk == 0) {
