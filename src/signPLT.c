@@ -604,7 +604,7 @@ bool parse_plt_operation_for_ui(const char* operation_display, parsedPLTOperatio
 }
 
 /**
- * @brief Handle Protected Ledger Transaction (PLT) signing operations
+ * @brief Handle Protocol Level Token (PLT) signing operations
  *
  * This function processes PLT transactions which can be sent in multiple chunks due to
  * APDU size limitations. The transaction contains a token ID and CBOR-encoded operation data

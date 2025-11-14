@@ -1,6 +1,6 @@
-# Protected Ledger Transaction (PLT)
+# Protocol Level Token (PLT)
 
-A transaction type for handling protected ledger operations. The transaction includes a token ID and CBOR-encoded operation data.
+A transaction type for handling protocol llevel token operations. The transaction includes a token ID and CBOR-encoded operation data.
 
 ## Protocol description
 
