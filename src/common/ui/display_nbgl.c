@@ -1,5 +1,6 @@
 #ifdef HAVE_NBGL
 #include "globals.h"
+#include "display.h"
 
 accountSender_t global_account_sender;
 static nbgl_contentTagValue_t pairs[32];  // Increased to handle multiple PLT operations
@@ -81,7 +82,7 @@ static void processNextVerificationKeyNoIdleCallback(bool confirm) {
 void uiComparePubkey(void) {
     nbgl_useCaseAddressReview(global.exportPublicKeyContext.publicKey,
                               NULL,
-                              &C_app_concordium_64px,
+                              &ICON_APP_HOME,
                               "Compare",
                               NULL,
                               review_choice);
@@ -90,7 +91,7 @@ void uiComparePubkey(void) {
 void uiGeneratePubkey(volatile unsigned int *flags) {
     nbgl_useCaseAddressReview((char *)global.exportPublicKeyContext.display,  // Address to display
                               NULL,                     // No additional tag-value list
-                              &C_app_concordium_64px,   // Icon to display
+                              &ICON_APP_HOME,           // Icon to display
                               "Public Key",             // Review title
                               NULL,                     // No review subtitle
                               review_public_key_choice  // Callback function
@@ -116,7 +117,7 @@ void uiExportPrivateKey(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_OPERATION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Export Private Key",
                        NULL,
                        "Accept",
@@ -205,7 +206,7 @@ void startConfigureBakerCommissionDisplay(void) {
         // Setup the review screen
         nbgl_useCaseReviewLight(TYPE_OPERATION,
                                 &content,
-                                &C_app_concordium_64px,
+                                &ICON_APP_HOME,
                                 "Review Transaction",
                                 NULL,  // No subtitle
                                 "Continue with transaction",
@@ -214,7 +215,7 @@ void startConfigureBakerCommissionDisplay(void) {
         // Setup the review screen
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &content,
-                           &C_app_concordium_64px,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
                            "Sign transaction",
@@ -251,7 +252,7 @@ void startConfigureBakerSuspendedDisplay(void) {
     // to signing screens.
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
                        "Sign transaction",
@@ -316,7 +317,7 @@ void startConfigureBakerDisplay(void) {
         // Setup the review screen
         nbgl_useCaseReviewLight(TYPE_OPERATION,
                                 &content,
-                                &C_app_concordium_64px,
+                                &ICON_APP_HOME,
                                 "Review Transaction",
                                 NULL,  // No subtitle
                                 "Continue with transaction",
@@ -333,7 +334,7 @@ void startConfigureBakerDisplay(void) {
         // Setup the review screen
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &content,
-                           &C_app_concordium_64px,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
                            "Sign transaction",
@@ -384,7 +385,7 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
         // Setup the review screen
         nbgl_useCaseReviewLight(TYPE_OPERATION,
                                 &content,
-                                &C_app_concordium_64px,
+                                &ICON_APP_HOME,
                                 "Review Transaction",
                                 NULL,  // No subtitle
                                 "Continue with transaction",
@@ -401,7 +402,7 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
         // Setup the review screen
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &content,
-                           &C_app_concordium_64px,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
                            "Sign transaction",
@@ -457,7 +458,7 @@ void startConfigureDelegationDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
                        "Sign transaction",
@@ -484,7 +485,7 @@ void uiSignUpdateCredentialThresholdDisplay(volatile unsigned int *flags) {
     // Setup the review screen - this is the final step so use nbgl_useCaseReview
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
                        "Sign transaction",
@@ -513,7 +514,7 @@ void uiSignUpdateCredentialInitialDisplay(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review",
                             "details",
                             "Continue with transaction",
@@ -542,7 +543,7 @@ void uiSignUpdateCredentialIdDisplay(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review",
                             "details",
                             "Continue with transaction",
@@ -568,7 +569,7 @@ void uiSignCredentialDeploymentVerificationKeyDisplay(volatile unsigned int *fla
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review",
                             "details",
                             "Continue with transaction",
@@ -612,7 +613,7 @@ void uiSignCredentialDeploymentNewIntroDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,
                        "Sign details",
@@ -658,7 +659,7 @@ void uiSignCredentialDeploymentExistingIntroDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,
                        "Sign details",
@@ -701,7 +702,7 @@ void uiSignCredentialDeploymentNewDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,
                        "Sign details",
@@ -747,7 +748,7 @@ void uiSignCredentialDeploymentExistingDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,
                        "Sign details",
@@ -771,7 +772,7 @@ void uiSignCredentialDeploymentVerificationKeyFlowDisplay(volatile unsigned int 
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review",
                             "details",
                             "Continue with transaction",
@@ -807,7 +808,7 @@ void uiSignPublicInformationForIpCompleteDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review identity",
                        "provider info",
                        "Sign identity",
@@ -839,7 +840,7 @@ void uiReviewPublicInformationForIpDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review identity",
                             "provider info",
                             "Continue reviewing info",
@@ -869,7 +870,7 @@ void uiSignPublicInformationForIpFinalDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review identity",
                        NULL,  // No subtitle
                        "Sign identity",
@@ -896,7 +897,7 @@ void uiSignPublicInformationForIpPublicKeyDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review identity",
                             NULL,  // No subtitle
                             "Continue reviewing info",
@@ -918,7 +919,7 @@ void uiRegisterDataInitialDisplay(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_OPERATION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review transaction",
                             NULL,  // No subtitle
                             "Continue with transaction",
@@ -946,7 +947,7 @@ void uiRegisterDataPayloadDisplay(volatile unsigned int *flags) {
         // Setup the review screen
         nbgl_useCaseReviewLight(TYPE_OPERATION,
                                 &content,
-                                &C_app_concordium_64px,
+                                &ICON_APP_HOME,
                                 "Review Data",
                                 NULL,  // No subtitle
                                 "Continue with transaction",
@@ -954,7 +955,7 @@ void uiRegisterDataPayloadDisplay(volatile unsigned int *flags) {
     } else {
         nbgl_useCaseReview(TYPE_TRANSACTION,
                            &content,
-                           &C_app_concordium_64px,
+                           &ICON_APP_HOME,
                            "Review Data",
                            NULL,  // No subtitle
                            "Sign transaction",
@@ -991,7 +992,7 @@ void startTransferDisplay(bool displayMemo, volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transfer",
                        NULL,  // No subtitle
                        "Sign Transfer",
@@ -1023,7 +1024,7 @@ void uiSignTransferToPublicDisplay(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
                        "Sign transaction",
@@ -1061,7 +1062,7 @@ void uiSignScheduledTransferPairFlowDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_TRANSACTION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review Scheduled release",
                             NULL,  // No subtitle
                             "Show next release",
@@ -1089,7 +1090,7 @@ void uiSignScheduledTransferPairFlowSignDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Scheduled release",
                        NULL,  // No subtitle
                        "Sign transaction",
@@ -1112,7 +1113,7 @@ void uiVerifyAddress(volatile unsigned int *flags) {
     // Setup the review screen
     nbgl_useCaseAddressReview((char *)global.verifyAddressContext.address,
                               &content,
-                              &C_app_concordium_64px,
+                              &ICON_APP_HOME,
                               "Verify Address",
                               NULL,  // No subtitle
                               review_verify_address);
@@ -1142,7 +1143,7 @@ void startInitialScheduledTransferDisplay(bool displayMemo) {
     // Setup the review screen
     nbgl_useCaseReviewLight(TYPE_TRANSACTION,
                             &content,
-                            &C_app_concordium_64px,
+                            &ICON_APP_HOME,
                             "Review Transfer with schedule",
                             NULL,  // No subtitle
                             "Continue with transfer",
@@ -1165,7 +1166,7 @@ void uiDeployModuleDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto deploy module",
                        NULL,  // No subtitle
                        "Sign transaction\nto deploy module",
@@ -1196,7 +1197,7 @@ void uiUpdateContractDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto update contract",
                        NULL,  // No subtitle
                        "Sign transaction\nto update contract",
@@ -1224,7 +1225,7 @@ void uiInitContractDisplay(void) {
     // Setup the review screen
     nbgl_useCaseReview(TYPE_TRANSACTION,
                        &content,
-                       &C_app_concordium_64px,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto update contract",
                        NULL,  // No subtitle
                        "Sign transaction\nto update contract",
