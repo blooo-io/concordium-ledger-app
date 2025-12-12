@@ -10,9 +10,6 @@ from application_client.boilerplate_response_unpacker import (
 from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
 from ragger.error import ExceptionRAPDU
 from ragger.navigator import NavInsID, NavIns
-from ragger.firmware import Firmware
-from utils import navigate_until_text_and_compare
-
 nano_accept_instructions = [
     NavInsID.BOTH_CLICK,
     NavInsID.RIGHT_CLICK,
@@ -25,7 +22,7 @@ nano_refuse_instructions = [
     NavInsID.BOTH_CLICK,
 ]
 
-flex_stax_accept_instructions = [
+wallet_accept_instructions = [
     NavInsID.SWIPE_CENTER_TO_LEFT,
     NavInsID.USE_CASE_CHOICE_CONFIRM,
     NavInsID.SWIPE_CENTER_TO_LEFT,
@@ -33,7 +30,7 @@ flex_stax_accept_instructions = [
     NavInsID.WAIT_FOR_HOME_SCREEN,
 ]
 
-flex_stax_refuse_instructions = [
+wallet_refuse_instructions = [
     NavInsID.SWIPE_CENTER_TO_LEFT,
     NavInsID.USE_CASE_CHOICE_REJECT,
     NavInsID.WAIT_FOR_HOME_SCREEN,
@@ -42,14 +39,14 @@ flex_stax_refuse_instructions = [
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode
 @pytest.mark.active_test_scope
 def test_get_legacy_public_key_confirm_accepted(
-    backend, navigator, firmware, default_screenshot_path, test_name, scenario_navigator
+    backend, navigator, default_screenshot_path, test_name, scenario_navigator
 ):
     client = BoilerplateCommandSender(backend)
     path = "m/1105/0/0/0/0/2/0/0"
-    if firmware.is_nano:
+    if backend.device.is_nano:
         instructions = nano_accept_instructions
     else:
-        instructions = flex_stax_accept_instructions
+        instructions = wallet_accept_instructions
 
     with client.get_public_key_with_confirmation(path=path):
         navigator.navigate_and_compare(
@@ -71,14 +68,14 @@ def test_get_legacy_public_key_confirm_accepted(
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode with signing
 @pytest.mark.active_test_scope
 def test_get_signed_legacy_public_key_confirm_accepted(
-    backend, navigator, firmware, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     client = BoilerplateCommandSender(backend)
     path = "m/1105/0/0/0/0/2/0/0"
-    if firmware.is_nano:
+    if backend.device.is_nano:
         instructions = nano_accept_instructions
     else:
-        instructions = flex_stax_accept_instructions
+        instructions = wallet_accept_instructions
 
     with client.get_public_key_with_confirmation(path=path, signPublicKey=True):
         navigator.navigate_and_compare(
@@ -100,14 +97,14 @@ def test_get_signed_legacy_public_key_confirm_accepted(
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode with signing for governance key
 @pytest.mark.active_test_scope
 def test_get_signed_legacy_governance_public_key_confirm_accepted(
-    backend, navigator, firmware, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     client = BoilerplateCommandSender(backend)
     path = "m/1105/0/1/0/0"
-    if firmware.is_nano:
+    if backend.device.is_nano:
         instructions = nano_accept_instructions
     else:
-        instructions = flex_stax_accept_instructions
+        instructions = wallet_accept_instructions
 
     with client.get_public_key_with_confirmation(path=path, signPublicKey=True):
         navigator.navigate_and_compare(
@@ -129,14 +126,14 @@ def test_get_signed_legacy_governance_public_key_confirm_accepted(
 # In this test we check that the GET_PUBLIC_KEY works in confirmation mode with signing
 @pytest.mark.active_test_scope
 def test_get_signed_new_public_key_confirm_accepted(
-    backend, navigator, firmware, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     client = BoilerplateCommandSender(backend)
     path = "m/44/919/0/0/0"
-    if firmware.is_nano:
+    if backend.device.is_nano:
         instructions = nano_accept_instructions
     else:
-        instructions = flex_stax_accept_instructions
+        instructions = wallet_accept_instructions
 
     with client.get_public_key_with_confirmation(path=path, signPublicKey=True):
         navigator.navigate_and_compare(
@@ -156,13 +153,13 @@ def test_get_signed_new_public_key_confirm_accepted(
 
 # In this test we check that the GET_PUBLIC_KEY in confirmation mode replies an error if the user refuses
 @pytest.mark.active_test_scope
-def test_get_public_key_confirm_refused(backend, firmware, navigator, default_screenshot_path, test_name):
+def test_get_public_key_confirm_refused(backend, navigator, default_screenshot_path, test_name):
     client = BoilerplateCommandSender(backend)
     path = "m/44'/919'/0'/0/0"
-    if firmware.is_nano:
+    if backend.device.is_nano:
             instructions = nano_refuse_instructions
     else:
-        instructions = flex_stax_refuse_instructions
+        instructions = wallet_refuse_instructions
 
     with pytest.raises(ExceptionRAPDU) as e:
         with client.get_public_key_with_confirmation(path=path):
