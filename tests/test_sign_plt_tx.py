@@ -435,7 +435,6 @@ def test_sign_plt_remove_deny_list_no_coininfo(
 
 # Test mint with maximum amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_mint_max_amount(
     backend, navigator, default_screenshot_path, test_name
 ):
@@ -486,7 +485,6 @@ def test_sign_plt_mint_amount_one(
 
 # Test mint with very small amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_mint_very_small_amount(
     backend, navigator, default_screenshot_path, test_name
 ):
@@ -511,7 +509,6 @@ def test_sign_plt_mint_very_small_amount(
 
 # Test burn with maximum amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_burn_max_amount(
     backend, navigator, default_screenshot_path, test_name
 ):
@@ -559,7 +556,8 @@ def test_sign_plt_burn_amount_one(
 
 
 # Test burn with very small amount
-# todo: fix this test
+
+
 @pytest.mark.active_test_scope
 def test_sign_plt_burn_very_small_amount(
     backend, navigator, default_screenshot_path, test_name
@@ -585,7 +583,6 @@ def test_sign_plt_burn_very_small_amount(
 
 # Test transfer with maximum amount and no memo
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_transfer_max_amount_no_memo(
     backend, navigator, default_screenshot_path, test_name
 ):
