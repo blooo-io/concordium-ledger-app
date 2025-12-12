@@ -31,7 +31,6 @@ def test_export_standard_private_key_legacy_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert result.data == bytes.fromhex(
         "48235b90248b6e552d59bf8b533292d25c5afd1f8e1ad5d1e00478794642ba38"
     )
@@ -53,7 +52,6 @@ def test_export_recovery_private_key_legacy_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert result.data == bytes.fromhex(
         "48235b90248b6e552d59bf8b533292d25c5afd1f8e1ad5d1e00478794642ba38"
     )
@@ -77,7 +75,6 @@ def test_export_prfkey_and_idcredsed_private_key_legacy_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert result.data == bytes.fromhex(
         "48235b90248b6e552d59bf8b533292d25c5afd1f8e1ad5d1e00478794642ba3802a5a44c0b2e0abcaf313c77fa05f6449c092ad449a081098bd48515bf95e947"
     )
@@ -104,7 +101,6 @@ def test_export_identity_credential_creation_private_key_new_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert len(result.data) == 33 * 3
 
 
@@ -126,7 +122,6 @@ def test_export_account_creation_private_key_new_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert len(result.data) == 33 * 3
 
 
@@ -148,7 +143,6 @@ def test_export_id_recovery_private_key_new_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert len(result.data) == 33 * 2
 
 
@@ -170,7 +164,6 @@ def test_export_account_credential_discovery_private_key_new_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert len(result.data) == 33 * 1
 
 
@@ -192,5 +185,4 @@ def test_export_creation_of_zk_proof_private_key_new_path(
             screen_change_after_last_instruction=True,
         )
     result = client.get_async_response()
-    print("km------------result", result)
     assert len(result.data) == 33 * 1
