@@ -317,7 +317,6 @@ def navigate_until_text_and_compare(
 #     if(path_parts[1] == "1105'"):
 #         # Get the regular private key and convert it to BLS
 #         private_key = get_private_key_from_path(path)
-#         print("km-Private key: ", private_key)
 #         return bls_key_gen(private_key)
 
 #     # New scheme (44') - not implemented yet

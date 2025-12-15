@@ -118,7 +118,7 @@ class InsType(IntEnum):
 class Errors(IntEnum):
     # Success code
     SW_SUCCESS = 0x9000
-    
+
     # APDU Protocol Errors
     SW_NO_APDU_RECEIVED = 0x6982
     SW_DENY = 0x6985
@@ -135,7 +135,7 @@ class Errors(IntEnum):
     SW_TX_HASH_FAIL = 0xB006
     SW_BAD_STATE = 0xB007
     SW_SIGNATURE_FAIL = 0xB008
-    
+
     # Transaction and Parameter Errors
     SW_INVALID_STATE = 0x6B01
     SW_INVALID_PATH = 0x6B02
@@ -149,14 +149,14 @@ class Errors(IntEnum):
     SW_INVALID_NAME_LENGTH = 0x6B0A
     SW_INVALID_PARAMS_LENGTH = 0x6B0B
     SW_INVALID_COININFO = 0x6B0C
-    
+
     # PLT-specific error codes
     SW_PLT_CBOR_ERROR = 0x6B0D
     SW_PLT_BUFFER_ERROR = 0x6B0E
     SW_PLT_DATA_ERROR = 0x6B0F
-    
+
     # Device State Errors
-    SW_DEVICE_LOCKED = 0x530C    
+    SW_DEVICE_LOCKED = 0x530C
 
 
 # pylint: disable=too-many-public-methods
@@ -235,16 +235,12 @@ class BoilerplateCommandSender:
     ) -> Generator[None, None, None]:
         data = pack_derivation_path(path)
         data += header_and_to_address
-        print("km------------data", data.hex())
         index = P1.P1_NONE + 1
         # Get memo length in bytes
         memo_length = len(memo)
-        print("km------------memo_length", memo_length)
         # memo length has to take 2 bytes
         memo_length_bytes = memo_length.to_bytes(2, byteorder="big")
-        print("km------------memo_length_bytes", memo_length_bytes.hex())
         data += memo_length_bytes
-        print("km------------data", data.hex())
         self.backend.exchange(
             cla=CLA,
             ins=InsType.SIGN_TRANSFER_WITH_MEMO,
@@ -280,7 +276,6 @@ class BoilerplateCommandSender:
         data = pack_derivation_path(path)
         data += header_and_to_address
         data += num_pairs.to_bytes(1, byteorder="big")
-        print("km------------data", data.hex())
         with self.backend.exchange_async(
             cla=CLA,
             ins=InsType.SIGN_TRANSFER_WITH_SCHEDULE,
@@ -385,7 +380,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=data,
         )
-        print("km------------temp_response 2", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
 
@@ -400,7 +394,6 @@ class BoilerplateCommandSender:
                 p2=P2.P2_NONE,
                 data=chunk,
             )
-            print("km------------temp_response 3", temp_response)
             if temp_response.status != 0x9000:
                 raise ExceptionRAPDU(temp_response.status)
         with self.backend.exchange_async(
@@ -596,7 +589,6 @@ class BoilerplateCommandSender:
         ins = InsType.EXPORT_PRIVATE_KEY_LEGACY
 
         data += identity_index.to_bytes(4, byteorder="big")
-        print("km------------data", data.hex())
         with self.backend.exchange_async(
             cla=CLA,
             ins=ins,
@@ -638,7 +630,6 @@ class BoilerplateCommandSender:
         data += identity_index.to_bytes(4, byteorder="big")
         if account_index is not None:
             data += account_index.to_bytes(4, byteorder="big")
-        print("km------------data", data.hex())
         with self.backend.exchange_async(
             cla=CLA,
             ins=ins,
@@ -662,7 +653,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=data,
         )
-        print("km--------sent derivation path", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # handle credential deployment keys
@@ -675,7 +665,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=data,
         )
-        print("km--------sent number of keys", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         return True
@@ -715,7 +704,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=data,
         )
-        print("km--------sent last key", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
 
@@ -727,7 +715,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=signature_threshold,
         )
-        print("km--------sent signature threshold", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send ar_identity
@@ -738,7 +725,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=ar_identity,
         )
-        print("km--------sent ar_identity", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send credential dates
@@ -749,7 +735,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=credential_dates,
         )
-        print("km--------sent credential dates", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send attribute tag
@@ -760,7 +745,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=attribute_tag,
         )
-        print("km--------sent attribute tag", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send attribute value
@@ -771,7 +755,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=attribute_value,
         )
-        print("km--------sent attribute value", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send length of proofs
@@ -783,7 +766,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=data,
         )
-        print("km--------sent length of proofs", temp_response)
         if temp_response.status != 0x9000:
             raise ExceptionRAPDU(temp_response.status)
         # send proofs in chunks
@@ -796,7 +778,6 @@ class BoilerplateCommandSender:
                 p2=P2.P2_NONE,
                 data=chunk,
             )
-            print(f"km--------sent proof chunk {i+1}", temp_response)
             if temp_response.status != 0x9000:
                 raise ExceptionRAPDU(temp_response.status)
         # send new or existing
@@ -808,7 +789,6 @@ class BoilerplateCommandSender:
             p2=P2.P2_NONE,
             data=transaction,
         ) as response:
-            print("km--------sent new or existing", response)
             yield response
 
     @contextmanager

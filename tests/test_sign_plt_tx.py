@@ -354,8 +354,8 @@ def test_sign_plt_add_deny_list_with_coininfo(
     path: str = "m/1105/0/0/0/0/2/0/0"
 
     transaction = build_tx_with_payload(
-        "1b0474504c5400000046" +
-        "81a16b61646444656e794c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
+        "1b0474504c5400000046"
+        + "81a16b61646444656e794c697374a166746172676574d99d73a201d99d71a101190397035820a26c957377a2461b6d0b9f63e7c9504136181942145e16c926451bbce5502b15"
     )
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
@@ -443,7 +443,6 @@ def test_sign_plt_remove_deny_list_no_coininfo(
 
 # Test mint with maximum amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_mint_max_amount(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -494,7 +493,6 @@ def test_sign_plt_mint_amount_one(
 
 # Test mint with very small amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_mint_very_small_amount(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -519,7 +517,6 @@ def test_sign_plt_mint_very_small_amount(
 
 # Test burn with maximum amount
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_burn_max_amount(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
@@ -567,7 +564,6 @@ def test_sign_plt_burn_amount_one(
 
 
 # Test burn with very small amount
-# todo: fix this test
 @pytest.mark.active_test_scope
 def test_sign_plt_burn_very_small_amount(
     backend, firmware, navigator, default_screenshot_path, test_name
@@ -593,7 +589,6 @@ def test_sign_plt_burn_very_small_amount(
 
 # Test transfer with maximum amount and no memo
 @pytest.mark.active_test_scope
-# todo: fix this test
 def test_sign_plt_transfer_max_amount_no_memo(
     backend, firmware, navigator, default_screenshot_path, test_name
 ):
