@@ -28,7 +28,7 @@ MAX_APDU_LEN: int = 255
 # The display should be in normal format for Stax/Flex and JSON format for Nano
 @pytest.mark.active_test_scope
 def test_sign_plt_multiple_operations(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     client = BoilerplateCommandSender(backend)
     path: str = "m/1105/0/0/0/0/2/0/0"
@@ -41,7 +41,7 @@ def test_sign_plt_multiple_operations(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -56,7 +56,7 @@ def test_sign_plt_multiple_operations(
 # The display should be in JSON format for all devices
 @pytest.mark.active_test_scope
 def test_sign_plt_multiple_operations_JSON_display(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     client = BoilerplateCommandSender(backend)
     path: str = "m/1105/0/0/0/0/2/0/0"
@@ -69,7 +69,7 @@ def test_sign_plt_multiple_operations_JSON_display(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -84,7 +84,7 @@ def test_sign_plt_multiple_operations_JSON_display(
 # We will ensure that the displayed information is correct by using screenshots comparison
 @pytest.mark.active_test_scope
 def test_sign_plt_single_transfer(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     # Use the app interface instead of raw interface
     client = BoilerplateCommandSender(backend)
@@ -101,7 +101,7 @@ def test_sign_plt_single_transfer(
     with client.sign_plt_transaction(path=path, transaction=transaction):
         # Validate the on-screen request by performing the navigation appropriate for this device
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     # The device as yielded the result, parse it and ensure that the signature is correct
@@ -117,9 +117,7 @@ def test_sign_plt_single_transfer(
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
 @pytest.mark.active_test_scope
-def test_sign_plt_single_mint(
-    backend, firmware, navigator, default_screenshot_path, test_name
-):
+def test_sign_plt_single_mint(backend, navigator, default_screenshot_path, test_name):
     # Use the app interface instead of raw interface
     client = BoilerplateCommandSender(backend)
     # The path used for this entire test
@@ -135,7 +133,7 @@ def test_sign_plt_single_mint(
     with client.sign_plt_transaction(path=path, transaction=transaction):
         # Validate the on-screen request by performing the navigation appropriate for this device
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     # The device as yielded the result, parse it and ensure that the signature is correct
@@ -151,9 +149,7 @@ def test_sign_plt_single_mint(
 # The transaction is short and will be sent in one chunk
 # We will ensure that the displayed information is correct by using screenshots comparison
 @pytest.mark.active_test_scope
-def test_sign_plt_single_deny(
-    backend, firmware, navigator, default_screenshot_path, test_name
-):
+def test_sign_plt_single_deny(backend, navigator, default_screenshot_path, test_name):
     # Use the app interface instead of raw interface
     client = BoilerplateCommandSender(backend)
     # The path used for this entire test
@@ -169,7 +165,7 @@ def test_sign_plt_single_deny(
     with client.sign_plt_transaction(path=path, transaction=transaction):
         # Validate the on-screen request by performing the navigation appropriate for this device
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     # The device as yielded the result, parse it and ensure that the signature is correct
@@ -185,7 +181,7 @@ def test_sign_plt_single_deny(
 # Test empty operations
 @pytest.mark.active_test_scope
 def test_sign_plt_empty_operations(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with empty operations"""
     client = BoilerplateCommandSender(backend)
@@ -195,7 +191,7 @@ def test_sign_plt_empty_operations(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -206,9 +202,7 @@ def test_sign_plt_empty_operations(
 
 # Test pause operation
 @pytest.mark.active_test_scope
-def test_sign_plt_pause(
-    backend, firmware, navigator, default_screenshot_path, test_name
-):
+def test_sign_plt_pause(backend, navigator, default_screenshot_path, test_name):
     """Test PLT transaction with pause operation"""
     client = BoilerplateCommandSender(backend)
     path: str = "m/1105/0/0/0/0/2/0/0"
@@ -217,7 +211,7 @@ def test_sign_plt_pause(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -228,9 +222,7 @@ def test_sign_plt_pause(
 
 # Test unpause operation
 @pytest.mark.active_test_scope
-def test_sign_plt_unpause(
-    backend, firmware, navigator, default_screenshot_path, test_name
-):
+def test_sign_plt_unpause(backend, navigator, default_screenshot_path, test_name):
     """Test PLT transaction with unpause operation"""
     client = BoilerplateCommandSender(backend)
     path: str = "m/1105/0/0/0/0/2/0/0"
@@ -239,7 +231,7 @@ def test_sign_plt_unpause(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -251,7 +243,7 @@ def test_sign_plt_unpause(
 # Test add allow list with coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_add_allow_list_with_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with add allow list operation (with coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -263,7 +255,7 @@ def test_sign_plt_add_allow_list_with_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -275,7 +267,7 @@ def test_sign_plt_add_allow_list_with_coininfo(
 # Test add allow list without coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_add_allow_list_no_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with add allow list operation (no coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -287,7 +279,7 @@ def test_sign_plt_add_allow_list_no_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -299,7 +291,7 @@ def test_sign_plt_add_allow_list_no_coininfo(
 # Test remove allow list with coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_remove_allow_list_with_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with remove allow list operation (with coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -311,7 +303,7 @@ def test_sign_plt_remove_allow_list_with_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -323,7 +315,7 @@ def test_sign_plt_remove_allow_list_with_coininfo(
 # Test remove allow list without coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_remove_allow_list_no_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with remove allow list operation (no coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -335,7 +327,7 @@ def test_sign_plt_remove_allow_list_no_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -347,7 +339,7 @@ def test_sign_plt_remove_allow_list_no_coininfo(
 # Test add deny list with coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_add_deny_list_with_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with add deny list operation (with coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -360,7 +352,7 @@ def test_sign_plt_add_deny_list_with_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -372,7 +364,7 @@ def test_sign_plt_add_deny_list_with_coininfo(
 # Test add deny list without coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_add_deny_list_no_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with add deny list operation (no coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -384,7 +376,7 @@ def test_sign_plt_add_deny_list_no_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -396,7 +388,7 @@ def test_sign_plt_add_deny_list_no_coininfo(
 # Test remove deny list with coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_remove_deny_list_with_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with remove deny list operation (with coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -408,7 +400,7 @@ def test_sign_plt_remove_deny_list_with_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -420,7 +412,7 @@ def test_sign_plt_remove_deny_list_with_coininfo(
 # Test remove deny list without coininfo
 @pytest.mark.active_test_scope
 def test_sign_plt_remove_deny_list_no_coininfo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with remove deny list operation (no coininfo)"""
     client = BoilerplateCommandSender(backend)
@@ -432,7 +424,7 @@ def test_sign_plt_remove_deny_list_no_coininfo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -444,7 +436,7 @@ def test_sign_plt_remove_deny_list_no_coininfo(
 # Test mint with maximum amount
 @pytest.mark.active_test_scope
 def test_sign_plt_mint_max_amount(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with mint operation (maximum amount: 18446744073.709551615)"""
     client = BoilerplateCommandSender(backend)
@@ -458,7 +450,7 @@ def test_sign_plt_mint_max_amount(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -470,7 +462,7 @@ def test_sign_plt_mint_max_amount(
 # Test mint with amount 1
 @pytest.mark.active_test_scope
 def test_sign_plt_mint_amount_one(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with mint operation (amount: 1)"""
     client = BoilerplateCommandSender(backend)
@@ -482,7 +474,7 @@ def test_sign_plt_mint_amount_one(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -494,7 +486,7 @@ def test_sign_plt_mint_amount_one(
 # Test mint with very small amount
 @pytest.mark.active_test_scope
 def test_sign_plt_mint_very_small_amount(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with mint operation (very small amount)"""
     client = BoilerplateCommandSender(backend)
@@ -506,7 +498,7 @@ def test_sign_plt_mint_very_small_amount(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -518,7 +510,7 @@ def test_sign_plt_mint_very_small_amount(
 # Test burn with maximum amount
 @pytest.mark.active_test_scope
 def test_sign_plt_burn_max_amount(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with burn operation (maximum amount: 18446744073.709551615)"""
     client = BoilerplateCommandSender(backend)
@@ -530,7 +522,7 @@ def test_sign_plt_burn_max_amount(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -542,7 +534,7 @@ def test_sign_plt_burn_max_amount(
 # Test burn with amount 1
 @pytest.mark.active_test_scope
 def test_sign_plt_burn_amount_one(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with burn operation (amount: 1)"""
     client = BoilerplateCommandSender(backend)
@@ -554,7 +546,7 @@ def test_sign_plt_burn_amount_one(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -566,7 +558,7 @@ def test_sign_plt_burn_amount_one(
 # Test burn with very small amount
 @pytest.mark.active_test_scope
 def test_sign_plt_burn_very_small_amount(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with burn operation (very small amount)"""
     client = BoilerplateCommandSender(backend)
@@ -578,7 +570,7 @@ def test_sign_plt_burn_very_small_amount(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -590,7 +582,7 @@ def test_sign_plt_burn_very_small_amount(
 # Test transfer with maximum amount and no memo
 @pytest.mark.active_test_scope
 def test_sign_plt_transfer_max_amount_no_memo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with transfer operation (max amount, no memo)"""
     client = BoilerplateCommandSender(backend)
@@ -602,7 +594,7 @@ def test_sign_plt_transfer_max_amount_no_memo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -614,7 +606,7 @@ def test_sign_plt_transfer_max_amount_no_memo(
 # Test transfer with untagged memo
 @pytest.mark.active_test_scope
 def test_sign_plt_transfer_with_untagged_memo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with transfer operation (amount 50, untagged memo)"""
     client = BoilerplateCommandSender(backend)
@@ -626,7 +618,7 @@ def test_sign_plt_transfer_with_untagged_memo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
@@ -638,7 +630,7 @@ def test_sign_plt_transfer_with_untagged_memo(
 # Test transfer with CBOR memo
 @pytest.mark.active_test_scope
 def test_sign_plt_transfer_with_cbor_memo(
-    backend, firmware, navigator, default_screenshot_path, test_name
+    backend, navigator, default_screenshot_path, test_name
 ):
     """Test PLT transaction with transfer operation (small amount, CBOR memo)"""
     client = BoilerplateCommandSender(backend)
@@ -650,7 +642,7 @@ def test_sign_plt_transfer_with_cbor_memo(
 
     with client.sign_plt_transaction(path=path, transaction=transaction):
         navigate_until_text_and_compare(
-            firmware, navigator, "Sign", default_screenshot_path, test_name
+            backend, navigator, "Sign", default_screenshot_path, test_name
         )
 
     response = client.get_async_response().data
