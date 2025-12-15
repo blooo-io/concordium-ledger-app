@@ -106,14 +106,14 @@ def test_export_identity_credential_creation_private_key_new_path(
 
 @pytest.mark.active_test_scope
 def test_export_account_creation_private_key_new_path(
-    backend, firmware, navigator, test_name, default_screenshot_path
+    backend, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
         "account_creation", idp_index=0, identity_index=1, account_index=2
     ):
         navigate_until_text_and_compare(
-            firmware,
+            backend,
             navigator,
             "Accept",
             default_screenshot_path,
@@ -127,14 +127,14 @@ def test_export_account_creation_private_key_new_path(
 
 @pytest.mark.active_test_scope
 def test_export_id_recovery_private_key_new_path(
-    backend, firmware, navigator, test_name, default_screenshot_path
+    backend, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
         "id_recovery", idp_index=0, identity_index=1
     ):
         navigate_until_text_and_compare(
-            firmware,
+            backend,
             navigator,
             "Accept",
             default_screenshot_path,
@@ -148,14 +148,14 @@ def test_export_id_recovery_private_key_new_path(
 
 @pytest.mark.active_test_scope
 def test_export_account_credential_discovery_private_key_new_path(
-    backend, firmware, navigator, test_name, default_screenshot_path
+    backend, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
         "account_credential_discovery", idp_index=0, identity_index=1
     ):
         navigate_until_text_and_compare(
-            firmware,
+            backend,
             navigator,
             "Accept",
             default_screenshot_path,
@@ -169,14 +169,14 @@ def test_export_account_credential_discovery_private_key_new_path(
 
 @pytest.mark.active_test_scope
 def test_export_creation_of_zk_proof_private_key_new_path(
-    backend, firmware, navigator, test_name, default_screenshot_path
+    backend, navigator, test_name, default_screenshot_path
 ):
     client = BoilerplateCommandSender(backend)
     with client.export_private_key_new_path(
         "creation_of_zk_proof", idp_index=0, identity_index=1, account_index=2
     ):
         navigate_until_text_and_compare(
-            firmware,
+            backend,
             navigator,
             "Accept",
             default_screenshot_path,
