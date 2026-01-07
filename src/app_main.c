@@ -89,6 +89,10 @@ void app_main() {
             isInitialCall = true;
         }
 
+        if (cmd.cla != CLA) {
+            io_send_sw(ERROR_INVALID_CLA);
+        }
+
         // Dispatch structured APDU command to handler
         if (handler(cmd.ins, cmd.data, cmd.p1, cmd.p2, cmd.lc, &flags, isInitialCall) < 0) {
             PRINTF("=> handler failure\n");
