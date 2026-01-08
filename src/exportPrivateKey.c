@@ -170,23 +170,29 @@ void handleExportPrivateKey(uint8_t *dataBuffer,
     // Reset the offset to 0
     offset = 0;
     if (ctx->isNewPath) {
-        memmove(ctx->display, "IDP#", 4);
+        memmove(ctx->display_credid, "IDP#", 4);
         offset += 4;
-        offset += bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity_provider);
+        offset += bin2dec(ctx->display_credid + offset,
+                          sizeof(ctx->display_credid) - offset,
+                          identity_provider);
         // Remove the null terminator
         offset -= 1;
     }
 
-    memmove(ctx->display + offset, " ID#", 4);
+    memmove(ctx->display_credid + offset, " ID#", 4);
     offset += 4;
-    bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
+    bin2dec(ctx->display_credid + offset, sizeof(ctx->display_credid) - offset, identity);
 
+    memmove(ctx->display_credid_title, "Credentials ID", EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN);
+    memmove(ctx->display_review_operation,
+            "Review operation",
+            EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN);
     if (p1 == P1_BOTH) {
-        memmove(ctx->displayHeader, "Create credential", 18);
+        memmove(ctx->display_review_verb, "to create credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
     } else if (p1 == P1_PRF_KEY_RECOVERY) {
-        memmove(ctx->displayHeader, "Recover credentials", 20);
+        memmove(ctx->display_review_verb, "to recover credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
     } else if (p1 == P1_PRF_KEY) {
-        memmove(ctx->displayHeader, "Decrypt", 8);
+        memmove(ctx->display_review_verb, "to decrypt credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
     }
 
     uiExportPrivateKey(flags);

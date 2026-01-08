@@ -93,10 +93,19 @@ void uiGeneratePubkey(volatile unsigned int *flags) {
 void uiExportPrivateKey(volatile unsigned int *flags) {
     // Create tag-value pairs for the content
     uint8_t pairIndex = 0;
-    pairs[pairIndex].item = (char *)global.exportPrivateKeyContext.displayHeader;
-    pairs[pairIndex].value = (char *)global.exportPrivateKeyContext.display;
+
+    global.exportPrivateKeyContext
+        .display_review_operation[EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN - 1] = ' ';
+    memcpy(global.exportPrivateKeyContext.display_review_operation +
+               EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN,
+           global.exportPrivateKeyContext.display_review_verb,
+           EXPORT_PRIVATE_KEY_VERB_LEN);
+
+    pairs[pairIndex].item = (char *)global.exportPrivateKeyContext.display_credid_title;
+    pairs[pairIndex].value = (char *)global.exportPrivateKeyContext.display_credid;
     pairIndex++;
 
+    PRINTF("%s", global.exportPrivateKeyContext.display_review_operation);
     // Create the page content
     nbgl_contentTagValueList_t content;
     content.nbPairs = pairIndex;
@@ -104,12 +113,12 @@ void uiExportPrivateKey(volatile unsigned int *flags) {
     content.smallCaseForValue = false;
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
+    content.wrapping = true;
 
-    // Setup the review screen
     nbgl_useCaseReview(TYPE_OPERATION,
                        &content,
                        &ICON_APP_HOME,
-                       "Export Private Key",
+                       (char *)global.exportPrivateKeyContext.display_review_operation,
                        NULL,
                        "Accept",
                        review_export_private_key);

@@ -89,10 +89,17 @@ UX_STEP_CB(ux_sign_flow_shared_decline,
            {&C_icon_crossmark, "Decline to", "sign transaction"});
 UX_FLOW(ux_sign_flow_shared, &ux_sign_flow_shared_sign, &ux_sign_flow_shared_decline);
 
-UX_STEP_NOCB(ux_export_private_key_0_step,
-             nn,
-             {(char *)global.exportPrivateKeyContext.displayHeader,
-              (char *)global.exportPrivateKeyContext.display});
+UX_STEP_NOCB(ux_export_private_key_purpose_step,
+             pnn,
+             {&C_app_concordium_16px,
+              (char *)global.exportPrivateKeyContext.display_review_operation,
+              (char *)global.exportPrivateKeyContext.display_review_verb});
+
+UX_STEP_NOCB(ux_export_private_key_credid_step,
+
+             bnnn_paging,
+             {.title = (char *)global.exportPrivateKeyContext.display_credid_title,
+              .text = (char *)global.exportPrivateKeyContext.display_credid});
 UX_STEP_CB(ux_export_private_key_accept_step,
            pb,
            exportPrivateKey(),
@@ -102,7 +109,8 @@ UX_STEP_CB(ux_export_private_key_decline_step,
            sendUserRejection(),
            {&C_icon_crossmark, "Decline"});
 UX_FLOW(ux_export_private_key,
-        &ux_export_private_key_0_step,
+        &ux_export_private_key_purpose_step,
+        &ux_export_private_key_credid_step,
         &ux_export_private_key_accept_step,
         &ux_export_private_key_decline_step);
 
@@ -180,10 +188,10 @@ UX_STEP_NOCB(ux_sign_configure_baker_suspended_step,
  * Dynamically builds and initializes the capital, restake earnings, pool status and
  * baker keys display.
  * - Ensures that the UI starts with the shared review transaction screens.
- * - Only displays the parts of the transaction that are set in the transaction, and skips
- *   any optional fields that are not included.
- * - If either the URL or commission rates are in the transaction, then it shows a continue screen
- *   at the end.
+ * - Only displays the parts of the transaction that are set in the transaction, and
+ * skips any optional fields that are not included.
+ * - If either the URL or commission rates are in the transaction, then it shows a
+ * continue screen at the end.
  */
 void startConfigureBakerDisplay(void) {
     uint8_t index = 0;
@@ -212,8 +220,8 @@ void startConfigureBakerDisplay(void) {
         ux_sign_configure_baker_first[index++] = &ux_sign_configure_baker_keys_step;
     }
 
-    // If there are additional steps, then show continue screen. If this is the last step,
-    // then show signing screens.
+    // If there are additional steps, then show continue screen. If this is the last
+    // step, then show signing screens.
     if (ctx_conf_baker->hasMetadataUrl || hasCommissionRate()) {
         ux_sign_configure_baker_first[index++] = &ux_sign_configure_baker_continue;
     } else {
@@ -228,15 +236,15 @@ void startConfigureBakerDisplay(void) {
 
 /**
  * Dynamically builds and initializes the URL display.
- * - If the transaction does not contain any capital, restake earnings, open for delegation or any
- *   baker keys, then it ensures that the UI starts with the shared review transaction screens. As
- *   the same method is used for the pagination of the URL, this is only the case the first time it
- *   is called.
- * - If it is the final part of the URL display and there are no commission rates as part of the
- *   transaction, then it displays the signing / decline screens.
+ * - If the transaction does not contain any capital, restake earnings, open for
+ * delegation or any baker keys, then it ensures that the UI starts with the shared
+ * review transaction screens. As the same method is used for the pagination of the
+ * URL, this is only the case the first time it is called.
+ * - If it is the final part of the URL display and there are no commission rates as
+ * part of the transaction, then it displays the signing / decline screens.
  * - If there are commission rates in the transaction, then it shows a continue screen.
- * - If it is the final part of the URL display, then the URL screen does not have a callback to
- * continue as additional UI elements are added to guide the user forward.
+ * - If it is the final part of the URL display, then the URL screen does not have a
+ * callback to continue as additional UI elements are added to guide the user forward.
  */
 void startConfigureBakerUrlDisplay(bool lastUrlPage) {
     uint8_t index = 0;
@@ -274,7 +282,8 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
  * Dynamically builds and initializes the commission display.
  * - If the transaction only contains commission rates, then it ensures that
  *   the UI starts with the shared review transaction screens.
- * - Only shows the commission rates that have been indicated to be part of the transaction.
+ * - Only shows the commission rates that have been indicated to be part of the
+ * transaction.
  * - Shows the signing / decline screens.
  */
 void startConfigureBakerCommissionDisplay() {
@@ -322,7 +331,8 @@ void startConfigureBakerCommissionDisplay() {
  * Dynamically builds and initializes the suspended display.
  * - If the transaction only contains suspended boolean, then it ensures that
  *   the UI starts with the shared review transaction screens.
- * - Only shows the suspended message that have been indicated to be part of the transaction.
+ * - Only shows the suspended message that have been indicated to be part of the
+ * transaction.
  * - Shows the signing / decline screens.
  */
 void startConfigureBakerSuspendedDisplay() {
@@ -766,9 +776,9 @@ const ux_flow_step_t *ux_sign_scheduled_amount_transfer[8];
 static signTransferWithScheduleContext_t *ctx_sign_transfer_with_schedule =
     &global.withDataBlob.signTransferWithScheduleContext;
 
-// UI definitions for displaying the transaction contents of the first packet for verification
-// before continuing to process the scheduled amount pairs that will be received in separate
-// packets.
+// UI definitions for displaying the transaction contents of the first packet for
+// verification before continuing to process the scheduled amount pairs that will be
+// received in separate packets.
 UX_STEP_NOCB(ux_scheduled_transfer_initial_flow_1_step,
              bnnn_paging,
              {.title = "Recipient",

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #if defined(TARGET_STAX) || defined(TARGET_FLEX)
 #define ICON_APP_HOME C_app_concordium_64px
 #elif defined(TARGET_APEX_P)
