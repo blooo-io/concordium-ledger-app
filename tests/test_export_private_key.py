@@ -22,7 +22,7 @@ def test_export_standard_private_key_legacy_path(
         navigate_until_text_and_compare(
             backend,
             navigator,
-            "Accept",
+            "Sign operation",
             default_screenshot_path,
             test_name,
             screen_change_before_first_instruction=True,
@@ -44,7 +44,7 @@ def test_export_recovery_private_key_legacy_path(
         navigate_until_text_and_compare(
             backend,
             navigator,
-            "Accept",
+             "Sign operation",
             default_screenshot_path,
             test_name,
             screen_change_before_first_instruction=True,
@@ -68,7 +68,7 @@ def test_export_prfkey_and_idcredsed_private_key_legacy_path(
         navigate_until_text_and_compare(
             backend,
             navigator,
-            "Accept",
+            "Sign operation",
             default_screenshot_path,
             test_name,
             screen_change_before_first_instruction=True,
@@ -92,7 +92,7 @@ def test_export_standard_private_key_new_path(
         navigate_until_text_and_compare(
             backend,
             navigator,
-            "Accept",
+            "Sign operation",
             default_screenshot_path,
             test_name,
             screen_change_before_first_instruction=True,

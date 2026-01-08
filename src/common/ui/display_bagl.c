@@ -103,11 +103,11 @@ UX_STEP_NOCB(ux_export_private_key_credid_step,
 UX_STEP_CB(ux_export_private_key_accept_step,
            pb,
            exportPrivateKey(),
-           {&C_icon_validate_14, "Accept"});
+           {&C_icon_validate_14, (char *)global.exportPrivateKeyContext.display_sign});
 UX_STEP_CB(ux_export_private_key_decline_step,
            pb,
            sendUserRejection(),
-           {&C_icon_crossmark, "Decline"});
+           {&C_icon_crossmark, "Reject operation"});
 UX_FLOW(ux_export_private_key,
         &ux_export_private_key_purpose_step,
         &ux_export_private_key_credid_step,

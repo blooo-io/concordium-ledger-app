@@ -187,6 +187,7 @@ void handleExportPrivateKey(uint8_t *dataBuffer,
     memmove(ctx->display_review_operation,
             "Review operation",
             EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN);
+    memmove(ctx->display_sign, "Sign operation", EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN);
     if (p1 == P1_BOTH) {
         memmove(ctx->display_review_verb, "to create credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
     } else if (p1 == P1_PRF_KEY_RECOVERY) {

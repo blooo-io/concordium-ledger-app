@@ -101,11 +101,16 @@ void uiExportPrivateKey(volatile unsigned int *flags) {
            global.exportPrivateKeyContext.display_review_verb,
            EXPORT_PRIVATE_KEY_VERB_LEN);
 
+    global.exportPrivateKeyContext.display_sign[EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN - 1] = '\n';
+
+    memcpy(global.exportPrivateKeyContext.display_sign + EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN,
+           global.exportPrivateKeyContext.display_review_verb,
+           EXPORT_PRIVATE_KEY_VERB_LEN - 1);
+
     pairs[pairIndex].item = (char *)global.exportPrivateKeyContext.display_credid_title;
     pairs[pairIndex].value = (char *)global.exportPrivateKeyContext.display_credid;
     pairIndex++;
 
-    PRINTF("%s", global.exportPrivateKeyContext.display_review_operation);
     // Create the page content
     nbgl_contentTagValueList_t content;
     content.nbPairs = pairIndex;
@@ -120,7 +125,7 @@ void uiExportPrivateKey(volatile unsigned int *flags) {
                        &ICON_APP_HOME,
                        (char *)global.exportPrivateKeyContext.display_review_operation,
                        NULL,
-                       "Accept",
+                       (char *)global.exportPrivateKeyContext.display_sign,
                        review_export_private_key);
     *flags |= IO_ASYNCH_REPLY;
 }
