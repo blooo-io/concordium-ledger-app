@@ -1,5 +1,5 @@
 from hashlib import sha256
-from sha3 import keccak_256  # type: ignore
+from Crypto.Hash import keccak  # type: ignore
 from typing import List
 
 from ecdsa.curves import SECP256k1  # type: ignore
