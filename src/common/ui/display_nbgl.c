@@ -61,28 +61,31 @@ static void keep_going_with_transaction(bool confirm) {
     }
 }
 static void sendSuccessNoIdleCallback(bool confirm) {
-    (void)confirm;  // Suppress unused parameter warning
+    (void) confirm;  // Suppress unused parameter warning
     sendSuccessNoIdle();
 }
 
 static void processNextVerificationKeyNoIdleCallback(bool confirm) {
-    (void)confirm;  // Suppress unused parameter warning
+    (void) confirm;  // Suppress unused parameter warning
     processNextVerificationKey();
 }
 
 void uiComparePubkey(void) {
-    nbgl_useCaseAddressReview(global.exportPublicKeyContext.publicKey, NULL,
-                              &ICON_APP_HOME, "Compare", NULL, review_choice);
+    nbgl_useCaseAddressReview(global.exportPublicKeyContext.publicKey,
+                              NULL,
+                              &ICON_APP_HOME,
+                              "Compare",
+                              NULL,
+                              review_choice);
 }
 
 void uiGeneratePubkey(volatile unsigned int* flags) {
-    nbgl_useCaseAddressReview(
-        (char*)global.exportPublicKeyContext.display,  // Address to display
-        NULL,                     // No additional tag-value list
-        &ICON_APP_HOME,           // Icon to display
-        "Public Key",             // Review title
-        NULL,                     // No review subtitle
-        review_public_key_choice  // Callback function
+    nbgl_useCaseAddressReview((char*) global.exportPublicKeyContext.display,  // Address to display
+                              NULL,                     // No additional tag-value list
+                              &ICON_APP_HOME,           // Icon to display
+                              "Public Key",             // Review title
+                              NULL,                     // No review subtitle
+                              review_public_key_choice  // Callback function
     );
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -92,25 +95,20 @@ void uiExportPrivateKey(volatile unsigned int* flags) {
     uint8_t pairIndex = 0;
 
     global.exportPrivateKeyContext
-        .display_review_operation[EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN - 1] =
-        ' ';
+        .display_review_operation[EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN - 1] = ' ';
     memcpy(global.exportPrivateKeyContext.display_review_operation +
                EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN,
            global.exportPrivateKeyContext.display_review_verb,
            EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
 
-    global.exportPrivateKeyContext
-        .display_sign[EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN - 1] = '\n';
+    global.exportPrivateKeyContext.display_sign[EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN - 1] = '\n';
 
-    memcpy(global.exportPrivateKeyContext.display_sign +
-               EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN,
+    memcpy(global.exportPrivateKeyContext.display_sign + EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN,
            global.exportPrivateKeyContext.display_sign_verb,
            EXPORT_PRIVATE_KEY_SIGN_VERB_LEN - 1);
 
-    pairs[pairIndex].item =
-        (char*)global.exportPrivateKeyContext.display_credid_title;
-    pairs[pairIndex].value =
-        (char*)global.exportPrivateKeyContext.display_credid;
+    pairs[pairIndex].item = (char*) global.exportPrivateKeyContext.display_credid_title;
+    pairs[pairIndex].value = (char*) global.exportPrivateKeyContext.display_credid;
     pairIndex++;
 
     // Create the page content
@@ -122,11 +120,13 @@ void uiExportPrivateKey(volatile unsigned int* flags) {
     content.startIndex = 0;
     content.wrapping = true;
 
-    nbgl_useCaseReview(
-        TYPE_OPERATION, &content, &ICON_APP_HOME,
-        (char*)global.exportPrivateKeyContext.display_review_operation, NULL,
-        (char*)global.exportPrivateKeyContext.display_sign,
-        review_export_private_key);
+    nbgl_useCaseReview(TYPE_OPERATION,
+                       &content,
+                       &ICON_APP_HOME,
+                       (char*) global.exportPrivateKeyContext.display_review_operation,
+                       NULL,
+                       (char*) global.exportPrivateKeyContext.display_sign,
+                       review_export_private_key);
     *flags |= IO_ASYNCH_REPLY;
 }
 
@@ -139,7 +139,7 @@ void startConfigureBakerCommissionDisplay(void) {
     if (ctx->firstDisplay) {
         // Add sender address
         pairs[pairIndex].item = "Sender";
-        pairs[pairIndex].value = (char*)global_account_sender.sender;
+        pairs[pairIndex].value = (char*) global_account_sender.sender;
         pairIndex++;
         ctx->firstDisplay = false;
     }
@@ -154,24 +154,21 @@ void startConfigureBakerCommissionDisplay(void) {
     if (ctx->hasTransactionFeeCommission) {
         pairs[pairIndex].item = "Transaction fee";
         pairs[pairIndex].value =
-            (char*)global.signConfigureBaker.commissionRates
-                .transactionFeeCommissionRate;
+            (char*) global.signConfigureBaker.commissionRates.transactionFeeCommissionRate;
         pairIndex++;
     }
 
     if (ctx->hasBakingRewardCommission) {
         pairs[pairIndex].item = "Baking reward";
         pairs[pairIndex].value =
-            (char*)global.signConfigureBaker.commissionRates
-                .bakingRewardCommissionRate;
+            (char*) global.signConfigureBaker.commissionRates.bakingRewardCommissionRate;
         pairIndex++;
     }
 
     if (ctx->hasFinalizationRewardCommission) {
         pairs[pairIndex].item = "Finalization reward";
         pairs[pairIndex].value =
-            (char*)global.signConfigureBaker.commissionRates
-                .finalizationRewardCommissionRate;
+            (char*) global.signConfigureBaker.commissionRates.finalizationRewardCommissionRate;
         pairIndex++;
     }
 
@@ -186,16 +183,22 @@ void startConfigureBakerCommissionDisplay(void) {
     // to signing screens.
     if (ctx->hasSuspended) {
         // Setup the review screen
-        nbgl_useCaseReviewLight(
-            TYPE_OPERATION, &content, &ICON_APP_HOME, "Review Transaction",
-            NULL,  // No subtitle
-            "Continue with transaction", sendSuccessNoIdleCallback);
+        nbgl_useCaseReviewLight(TYPE_OPERATION,
+                                &content,
+                                &ICON_APP_HOME,
+                                "Review Transaction",
+                                NULL,  // No subtitle
+                                "Continue with transaction",
+                                sendSuccessNoIdleCallback);
     } else {
         // Setup the review screen
-        nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+        nbgl_useCaseReview(TYPE_TRANSACTION,
+                           &content,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
-                           "Sign transaction", review_choice_sign);
+                           "Sign transaction",
+                           review_choice_sign);
     }
 }
 
@@ -208,13 +211,13 @@ void startConfigureBakerSuspendedDisplay(void) {
     if (ctx->firstDisplay) {
         // Add sender address
         pairs[pairIndex].item = "Sender";
-        pairs[pairIndex].value = (char*)global_account_sender.sender;
+        pairs[pairIndex].value = (char*) global_account_sender.sender;
         pairIndex++;
         ctx->firstDisplay = false;
     }
 
     pairs[pairIndex].item = "Validator status";
-    pairs[pairIndex].value = (char*)global.signConfigureBaker.suspended;
+    pairs[pairIndex].value = (char*) global.signConfigureBaker.suspended;
     pairIndex++;
 
     // Create the page content
@@ -226,10 +229,13 @@ void startConfigureBakerSuspendedDisplay(void) {
     content.startIndex = 0;
 
     // to signing screens.
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
-                       "Sign transaction", review_choice_sign);
+                       "Sign transaction",
+                       review_choice_sign);
 }
 
 void startConfigureBakerDisplay(void) {
@@ -240,7 +246,7 @@ void startConfigureBakerDisplay(void) {
     uint8_t pairIndex = 0;
     // Add sender address
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
 
     ctx->firstDisplay = false;
@@ -252,24 +258,22 @@ void startConfigureBakerDisplay(void) {
         } else {
             pairs[pairIndex].item = "Amount to stake";
             pairs[pairIndex].value =
-                (char*)global.signConfigureBaker.capitalRestakeDelegation
-                    .displayCapital;
+                (char*) global.signConfigureBaker.capitalRestakeDelegation.displayCapital;
         }
         pairIndex++;
     }
 
     if (ctx->hasRestakeEarnings) {
         pairs[pairIndex].item = "Restake earnings";
-        pairs[pairIndex].value = (char*)global.signConfigureBaker
-                                     .capitalRestakeDelegation.displayRestake;
+        pairs[pairIndex].value =
+            (char*) global.signConfigureBaker.capitalRestakeDelegation.displayRestake;
         pairIndex++;
     }
 
     if (ctx->hasOpenForDelegation) {
         pairs[pairIndex].item = "Pool status";
         pairs[pairIndex].value =
-            (char*)global.signConfigureBaker.capitalRestakeDelegation
-                .displayOpenForDelegation;
+            (char*) global.signConfigureBaker.capitalRestakeDelegation.displayOpenForDelegation;
         pairIndex++;
     }
 
@@ -290,10 +294,13 @@ void startConfigureBakerDisplay(void) {
         content.nbMaxLinesForValue = 0;
         content.startIndex = 0;
         // Setup the review screen
-        nbgl_useCaseReviewLight(
-            TYPE_OPERATION, &content, &ICON_APP_HOME, "Review Transaction",
-            NULL,  // No subtitle
-            "Continue with transaction", sendSuccessNoIdleCallback);
+        nbgl_useCaseReviewLight(TYPE_OPERATION,
+                                &content,
+                                &ICON_APP_HOME,
+                                "Review Transaction",
+                                NULL,  // No subtitle
+                                "Continue with transaction",
+                                sendSuccessNoIdleCallback);
     } else {
         // Create the page content
         nbgl_contentTagValueList_t content;
@@ -304,10 +311,13 @@ void startConfigureBakerDisplay(void) {
         content.startIndex = 0;
 
         // Setup the review screen
-        nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+        nbgl_useCaseReview(TYPE_TRANSACTION,
+                           &content,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
-                           "Sign transaction", review_choice_sign);
+                           "Sign transaction",
+                           review_choice_sign);
     }
 }
 
@@ -321,15 +331,14 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
     if (ctx->firstDisplay) {
         // Add sender address
         pairs[pairIndex].item = "Sender";
-        pairs[pairIndex].value = (char*)global_account_sender.sender;
+        pairs[pairIndex].value = (char*) global_account_sender.sender;
         pairIndex++;
         ctx->firstDisplay = false;
     }
 
     if (!lastUrlPage) {
         pairs[pairIndex].item = "URL";
-        pairs[pairIndex].value =
-            (char*)global.signConfigureBaker.url.urlDisplay;
+        pairs[pairIndex].value = (char*) global.signConfigureBaker.url.urlDisplay;
         pairIndex++;
     } else {
         if (ctx->url.urlLength == 0) {
@@ -337,8 +346,7 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
             pairs[pairIndex].value = "";
         } else {
             pairs[pairIndex].item = "URL";
-            pairs[pairIndex].value =
-                (char*)global.signConfigureBaker.url.urlDisplay;
+            pairs[pairIndex].value = (char*) global.signConfigureBaker.url.urlDisplay;
         }
         pairIndex++;
     }
@@ -354,10 +362,13 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
         content.nbMaxLinesForValue = 0;
         content.startIndex = 0;
         // Setup the review screen
-        nbgl_useCaseReviewLight(
-            TYPE_OPERATION, &content, &ICON_APP_HOME, "Review Transaction",
-            NULL,  // No subtitle
-            "Continue with transaction", sendSuccessNoIdleCallback);
+        nbgl_useCaseReviewLight(TYPE_OPERATION,
+                                &content,
+                                &ICON_APP_HOME,
+                                "Review Transaction",
+                                NULL,  // No subtitle
+                                "Continue with transaction",
+                                sendSuccessNoIdleCallback);
     } else {
         // Create the page content
         nbgl_contentTagValueList_t content;
@@ -368,10 +379,13 @@ void startConfigureBakerUrlDisplay(bool lastUrlPage) {
         content.startIndex = 0;
 
         // Setup the review screen
-        nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+        nbgl_useCaseReview(TYPE_TRANSACTION,
+                           &content,
+                           &ICON_APP_HOME,
                            "Review Transaction",
                            NULL,  // No subtitle
-                           "Sign transaction", review_choice_sign);
+                           "Sign transaction",
+                           review_choice_sign);
     }
 }
 
@@ -383,7 +397,7 @@ void startConfigureDelegationDisplay(void) {
     uint8_t pairIndex = 0;
     // Add sender address
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
 
     // Add capital amount if present
@@ -393,7 +407,7 @@ void startConfigureDelegationDisplay(void) {
             pairs[pairIndex].value = "Stop delegation";
         } else {
             pairs[pairIndex].item = "Amount to delegate";
-            pairs[pairIndex].value = (char*)ctx->displayCapital;
+            pairs[pairIndex].value = (char*) ctx->displayCapital;
         }
         pairIndex++;
     }
@@ -401,14 +415,14 @@ void startConfigureDelegationDisplay(void) {
     // Add restake earnings if present
     if (ctx->hasRestakeEarnings) {
         pairs[pairIndex].item = "Restake earnings";
-        pairs[pairIndex].value = (char*)ctx->displayRestake;
+        pairs[pairIndex].value = (char*) ctx->displayRestake;
         pairIndex++;
     }
 
     // Add delegation target if present
     if (ctx->hasDelegationTarget) {
         pairs[pairIndex].item = "Delegation target";
-        pairs[pairIndex].value = (char*)ctx->displayDelegationTarget;
+        pairs[pairIndex].value = (char*) ctx->displayDelegationTarget;
         pairIndex++;
     }
 
@@ -421,10 +435,13 @@ void startConfigureDelegationDisplay(void) {
     content.startIndex = 0;
 
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
-                       "Sign transaction", review_choice_sign);
+                       "Sign transaction",
+                       review_choice_sign);
 }
 
 void uiSignUpdateCredentialThresholdDisplay(volatile unsigned int* flags) {
@@ -433,8 +450,7 @@ void uiSignUpdateCredentialThresholdDisplay(volatile unsigned int* flags) {
 
     // Add threshold information
     pairs[pairIndex].item = "Threshold";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.threshold;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.threshold;
     pairIndex++;
 
     // Create the page content
@@ -447,10 +463,13 @@ void uiSignUpdateCredentialThresholdDisplay(volatile unsigned int* flags) {
 
     // Setup the review screen - this is the final step so use
     // nbgl_useCaseReview
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
-                       "Sign transaction", review_choice_sign);
+                       "Sign transaction",
+                       review_choice_sign);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -461,7 +480,7 @@ void uiSignUpdateCredentialInitialDisplay(volatile unsigned int* flags) {
 
     // Add sender address
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
 
     // Create the page content
@@ -473,8 +492,12 @@ void uiSignUpdateCredentialInitialDisplay(volatile unsigned int* flags) {
     content.startIndex = 0;
 
     // Setup the review screen
-    nbgl_useCaseReviewLight(TYPE_OPERATION, &content, &ICON_APP_HOME, "Review",
-                            "details", "Continue with transaction",
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review",
+                            "details",
+                            "Continue with transaction",
                             sendSuccessNoIdleCallback);
 
     *flags |= IO_ASYNCH_REPLY;
@@ -486,8 +509,7 @@ void uiSignUpdateCredentialIdDisplay(volatile unsigned int* flags) {
 
     // Add credential ID information
     pairs[pairIndex].item = "Credential ID";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.credentialId;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.credentialId;
     pairIndex++;
 
     // Create the page content
@@ -499,20 +521,22 @@ void uiSignUpdateCredentialIdDisplay(volatile unsigned int* flags) {
     content.startIndex = 0;
 
     // Setup the review screen
-    nbgl_useCaseReviewLight(TYPE_OPERATION, &content, &ICON_APP_HOME, "Review",
-                            "details", "Continue with transaction",
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review",
+                            "details",
+                            "Continue with transaction",
                             sendSuccessNoIdleCallback);
 
     *flags |= IO_ASYNCH_REPLY;
 }
 
-void uiSignCredentialDeploymentVerificationKeyDisplay(
-    volatile unsigned int* flags) {
+void uiSignCredentialDeploymentVerificationKeyDisplay(volatile unsigned int* flags) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
 
     // Create the page content
@@ -523,8 +547,12 @@ void uiSignCredentialDeploymentVerificationKeyDisplay(
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(TYPE_OPERATION, &content, &ICON_APP_HOME, "Review",
-                            "details", "Continue with transaction",
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review",
+                            "details",
+                            "Continue with transaction",
                             processNextVerificationKeyNoIdleCallback);
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -533,33 +561,26 @@ void uiSignCredentialDeploymentNewIntroDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.signatureThreshold;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.signatureThreshold;
     pairIndex++;
     pairs[pairIndex].item = "RegIdCred";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.regIdCred;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.regIdCred;
     pairIndex++;
     pairs[pairIndex].item = "Identity provider";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.identityProviderIndex;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.identityProviderIndex;
     pairIndex++;
     pairs[pairIndex].item = "AR threshold";
     pairs[pairIndex].value =
-        (char*)
-            global.signCredentialDeploymentContext.anonymityRevocationThreshold;
+        (char*) global.signCredentialDeploymentContext.anonymityRevocationThreshold;
     pairIndex++;
     pairs[pairIndex].item = "AR identity";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.arIdentity;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.arIdentity;
     pairIndex++;
     pairs[pairIndex].item = "Encrypted Share";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.encIdCredPubShare;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.encIdCredPubShare;
     pairIndex++;
 
     // Create the page content
@@ -570,8 +591,12 @@ void uiSignCredentialDeploymentNewIntroDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
-                       "Review Transaction", NULL, "Sign details",
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
+                       "Review Transaction",
+                       NULL,
+                       "Sign details",
                        review_choice_sign);
 }
 
@@ -579,37 +604,29 @@ void uiSignCredentialDeploymentExistingIntroDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.signatureThreshold;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.signatureThreshold;
     pairIndex++;
     pairs[pairIndex].item = "RegIdCred";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.regIdCred;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.regIdCred;
     pairIndex++;
     pairs[pairIndex].item = "Identity provider";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.identityProviderIndex;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.identityProviderIndex;
     pairIndex++;
     pairs[pairIndex].item = "AR threshold";
     pairs[pairIndex].value =
-        (char*)
-            global.signCredentialDeploymentContext.anonymityRevocationThreshold;
+        (char*) global.signCredentialDeploymentContext.anonymityRevocationThreshold;
     pairIndex++;
     pairs[pairIndex].item = "AR identity";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.arIdentity;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.arIdentity;
     pairIndex++;
     pairs[pairIndex].item = "Encrypted Share";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.encIdCredPubShare;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.encIdCredPubShare;
     pairIndex++;
     pairs[pairIndex].item = "Address";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountAddress;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountAddress;
     pairIndex++;
 
     // Create the page content
@@ -620,8 +637,12 @@ void uiSignCredentialDeploymentExistingIntroDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
-                       "Review Transaction", NULL, "Sign details",
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
+                       "Review Transaction",
+                       NULL,
+                       "Sign details",
                        review_choice_sign);
 }
 
@@ -629,33 +650,26 @@ void uiSignCredentialDeploymentNewDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.signatureThreshold;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.signatureThreshold;
     pairIndex++;
     pairs[pairIndex].item = "RegIdCred";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.regIdCred;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.regIdCred;
     pairIndex++;
     pairs[pairIndex].item = "Identity provider";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.identityProviderIndex;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.identityProviderIndex;
     pairIndex++;
     pairs[pairIndex].item = "AR threshold";
     pairs[pairIndex].value =
-        (char*)
-            global.signCredentialDeploymentContext.anonymityRevocationThreshold;
+        (char*) global.signCredentialDeploymentContext.anonymityRevocationThreshold;
     pairIndex++;
     pairs[pairIndex].item = "AR identity";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.arIdentity;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.arIdentity;
     pairIndex++;
     pairs[pairIndex].item = "Encrypted Share";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.encIdCredPubShare;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.encIdCredPubShare;
     pairIndex++;
 
     // Create the page content
@@ -666,8 +680,12 @@ void uiSignCredentialDeploymentNewDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
-                       "Review Transaction", NULL, "Sign details",
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
+                       "Review Transaction",
+                       NULL,
+                       "Sign details",
                        review_choice_sign);
 }
 
@@ -675,37 +693,29 @@ void uiSignCredentialDeploymentExistingDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.signatureThreshold;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.signatureThreshold;
     pairIndex++;
     pairs[pairIndex].item = "RegIdCred";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.regIdCred;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.regIdCred;
     pairIndex++;
     pairs[pairIndex].item = "Identity provider";
-    pairs[pairIndex].value =
-        global.signCredentialDeploymentContext.identityProviderIndex;
+    pairs[pairIndex].value = global.signCredentialDeploymentContext.identityProviderIndex;
     pairIndex++;
     pairs[pairIndex].item = "AR threshold";
     pairs[pairIndex].value =
-        (char*)
-            global.signCredentialDeploymentContext.anonymityRevocationThreshold;
+        (char*) global.signCredentialDeploymentContext.anonymityRevocationThreshold;
     pairIndex++;
     pairs[pairIndex].item = "AR identity";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.arIdentity;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.arIdentity;
     pairIndex++;
     pairs[pairIndex].item = "Encrypted Share";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.encIdCredPubShare;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.encIdCredPubShare;
     pairIndex++;
     pairs[pairIndex].item = "Address";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountAddress;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountAddress;
     pairIndex++;
 
     // Create the page content
@@ -716,18 +726,20 @@ void uiSignCredentialDeploymentExistingDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
-                       "Review Transaction", NULL, "Sign details",
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
+                       "Review Transaction",
+                       NULL,
+                       "Sign details",
                        review_choice_sign);
 }
 
-void uiSignCredentialDeploymentVerificationKeyFlowDisplay(
-    volatile unsigned int* flags) {
+void uiSignCredentialDeploymentVerificationKeyFlowDisplay(volatile unsigned int* flags) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value =
-        (char*)global.signCredentialDeploymentContext.accountVerificationKey;
+    pairs[pairIndex].value = (char*) global.signCredentialDeploymentContext.accountVerificationKey;
     pairIndex++;
 
     // Create the page content
@@ -738,8 +750,12 @@ void uiSignCredentialDeploymentVerificationKeyFlowDisplay(
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(TYPE_OPERATION, &content, &ICON_APP_HOME, "Review",
-                            "details", "Continue with transaction",
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review",
+                            "details",
+                            "Continue with transaction",
                             processNextVerificationKeyNoIdleCallback);
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -748,19 +764,19 @@ void uiSignPublicInformationForIpCompleteDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.publicKey;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.publicKey;
     pairIndex++;
     pairs[pairIndex].item = "Key type";
     pairs[pairIndex].value = global.signPublicInformationForIp.keyType;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.threshold;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.threshold;
     pairIndex++;
     pairs[pairIndex].item = "Id Cred Pub";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.idCredPub;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.idCredPub;
     pairIndex++;
     pairs[pairIndex].item = "Credential ID";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.credId;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.credId;
     pairIndex++;
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -770,8 +786,12 @@ void uiSignPublicInformationForIpCompleteDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
-                       "Review identity", "provider info", "Sign identity",
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
+                       "Review identity",
+                       "provider info",
+                       "Sign identity",
                        review_choice_sign);
 }
 void uiReviewPublicInformationForIpDisplay(void) {
@@ -784,10 +804,10 @@ void uiReviewPublicInformationForIpDisplay(void) {
     pairs[pairIndex].value = global.signPublicInformationForIp.keyType;
     pairIndex++;
     pairs[pairIndex].item = "Id Cred Pub";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.idCredPub;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.idCredPub;
     pairIndex++;
     pairs[pairIndex].item = "Credential ID";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.credId;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.credId;
     pairIndex++;
 
     // Create the page content
@@ -798,22 +818,26 @@ void uiReviewPublicInformationForIpDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(
-        TYPE_OPERATION, &content, &ICON_APP_HOME, "Review identity",
-        "provider info", "Continue reviewing info", sendSuccessNoIdleCallback);
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review identity",
+                            "provider info",
+                            "Continue reviewing info",
+                            sendSuccessNoIdleCallback);
 }
 
 void uiSignPublicInformationForIpFinalDisplay(void) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Public key";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.publicKey;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.publicKey;
     pairIndex++;
     pairs[pairIndex].item = "Key type";
     pairs[pairIndex].value = global.signPublicInformationForIp.keyType;
     pairIndex++;
     pairs[pairIndex].item = "Signature threshold";
-    pairs[pairIndex].value = (char*)global.signPublicInformationForIp.threshold;
+    pairs[pairIndex].value = (char*) global.signPublicInformationForIp.threshold;
     pairIndex++;
 
     // Create the page content
@@ -824,10 +848,13 @@ void uiSignPublicInformationForIpFinalDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review identity",
                        NULL,  // No subtitle
-                       "Sign identity", review_choice_sign);
+                       "Sign identity",
+                       review_choice_sign);
 }
 
 void uiSignPublicInformationForIpPublicKeyDisplay(void) {
@@ -848,16 +875,19 @@ void uiSignPublicInformationForIpPublicKeyDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(
-        TYPE_OPERATION, &content, &ICON_APP_HOME, "Review identity",
-        NULL,  // No subtitle
-        "Continue reviewing info", sendSuccessNoIdleCallback);
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review identity",
+                            NULL,  // No subtitle
+                            "Continue reviewing info",
+                            sendSuccessNoIdleCallback);
 }
 
 void uiRegisterDataInitialDisplay(volatile unsigned int* flags) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -867,10 +897,13 @@ void uiRegisterDataInitialDisplay(volatile unsigned int* flags) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(
-        TYPE_OPERATION, &content, &ICON_APP_HOME, "Review transaction",
-        NULL,  // No subtitle
-        "Continue with transaction", sendSuccessNoIdleCallback);
+    nbgl_useCaseReviewLight(TYPE_OPERATION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review transaction",
+                            NULL,  // No subtitle
+                            "Continue with transaction",
+                            sendSuccessNoIdleCallback);
     *flags |= IO_ASYNCH_REPLY;
 }
 
@@ -880,7 +913,7 @@ void uiRegisterDataPayloadDisplay(volatile unsigned int* flags) {
 
     uint8_t index = 0;
     pairs[index].item = "Data";
-    pairs[index].value = (char*)global.withDataBlob.cborContext.display;
+    pairs[index].value = (char*) global.withDataBlob.cborContext.display;
     index++;
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -892,15 +925,21 @@ void uiRegisterDataPayloadDisplay(volatile unsigned int* flags) {
 
     if (ctx->dataLength > 0) {
         // Setup the review screen
-        nbgl_useCaseReviewLight(
-            TYPE_OPERATION, &content, &ICON_APP_HOME, "Review Data",
-            NULL,  // No subtitle
-            "Continue with transaction", sendSuccessNoIdleCallback);
+        nbgl_useCaseReviewLight(TYPE_OPERATION,
+                                &content,
+                                &ICON_APP_HOME,
+                                "Review Data",
+                                NULL,  // No subtitle
+                                "Continue with transaction",
+                                sendSuccessNoIdleCallback);
     } else {
-        nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+        nbgl_useCaseReview(TYPE_TRANSACTION,
+                           &content,
+                           &ICON_APP_HOME,
                            "Review Data",
                            NULL,  // No subtitle
-                           "Sign transaction", review_choice_sign);
+                           "Sign transaction",
+                           review_choice_sign);
     }
 
     *flags |= IO_ASYNCH_REPLY;
@@ -909,19 +948,17 @@ void uiRegisterDataPayloadDisplay(volatile unsigned int* flags) {
 void startTransferDisplay(bool displayMemo, volatile unsigned int* flags) {
     uint8_t index = 0;
     pairs[index].item = "Sender";
-    pairs[index].value = (char*)global_account_sender.sender;
+    pairs[index].value = (char*) global_account_sender.sender;
     index++;
     pairs[index].item = "Recipient";
-    pairs[index].value =
-        (char*)global.withDataBlob.signTransferContext.displayStr;
+    pairs[index].value = (char*) global.withDataBlob.signTransferContext.displayStr;
     index++;
     pairs[index].item = "Amount";
-    pairs[index].value =
-        (char*)global.withDataBlob.signTransferContext.displayAmount;
+    pairs[index].value = (char*) global.withDataBlob.signTransferContext.displayAmount;
     index++;
     if (displayMemo) {
         pairs[index].item = "Memo";
-        pairs[index].value = (char*)global.withDataBlob.cborContext.display;
+        pairs[index].value = (char*) global.withDataBlob.cborContext.display;
         index++;
     }
 
@@ -933,10 +970,13 @@ void startTransferDisplay(bool displayMemo, volatile unsigned int* flags) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transfer",
                        NULL,  // No subtitle
-                       "Sign Transfer", review_choice_sign);
+                       "Sign Transfer",
+                       review_choice_sign);
 
     *flags |= IO_ASYNCH_REPLY;
 }
@@ -945,14 +985,13 @@ void uiSignTransferToPublicDisplay(volatile unsigned int* flags) {
     // Setup data to display
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
     pairs[pairIndex].item = "Unshield amount";
-    pairs[pairIndex].value = (char*)global.signTransferToPublic.amount;
+    pairs[pairIndex].value = (char*) global.signTransferToPublic.amount;
     pairIndex++;
     pairs[pairIndex].item = "Recipient";
-    pairs[pairIndex].value =
-        (char*)global.signTransferToPublic.recipientAddress;
+    pairs[pairIndex].value = (char*) global.signTransferToPublic.recipientAddress;
     pairIndex++;
 
     // Create the page content
@@ -963,10 +1002,13 @@ void uiSignTransferToPublicDisplay(volatile unsigned int* flags) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction",
                        NULL,  // No subtitle
-                       "Sign transaction", review_choice_sign);
+                       "Sign transaction",
+                       review_choice_sign);
     *flags |= IO_ASYNCH_REPLY;
 }
 
@@ -984,12 +1026,10 @@ void uiSignScheduledTransferPairFlowDisplay(void) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Release time (UTC)";
     pairs[pairIndex].value =
-        (char*)global.withDataBlob.signTransferWithScheduleContext
-            .displayTimestamp;
+        (char*) global.withDataBlob.signTransferWithScheduleContext.displayTimestamp;
     pairIndex++;
     pairs[pairIndex].item = "Amount";
-    pairs[pairIndex].value =
-        (char*)global.withDataBlob.signTransferWithScheduleContext.displayStr;
+    pairs[pairIndex].value = (char*) global.withDataBlob.signTransferWithScheduleContext.displayStr;
     pairIndex++;
 
     // Create the page content
@@ -1000,10 +1040,13 @@ void uiSignScheduledTransferPairFlowDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(
-        TYPE_TRANSACTION, &content, &ICON_APP_HOME, "Review Scheduled release",
-        NULL,  // No subtitle
-        "Show next release", processNextScheduledAmountWrapper);
+    nbgl_useCaseReviewLight(TYPE_TRANSACTION,
+                            &content,
+                            &ICON_APP_HOME,
+                            "Review Scheduled release",
+                            NULL,  // No subtitle
+                            "Show next release",
+                            processNextScheduledAmountWrapper);
 }
 
 void uiSignScheduledTransferPairFlowSignDisplay(void) {
@@ -1011,12 +1054,10 @@ void uiSignScheduledTransferPairFlowSignDisplay(void) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Release time (UTC)";
     pairs[pairIndex].value =
-        (char*)global.withDataBlob.signTransferWithScheduleContext
-            .displayTimestamp;
+        (char*) global.withDataBlob.signTransferWithScheduleContext.displayTimestamp;
     pairIndex++;
     pairs[pairIndex].item = "Amount";
-    pairs[pairIndex].value =
-        (char*)global.withDataBlob.signTransferWithScheduleContext.displayStr;
+    pairs[pairIndex].value = (char*) global.withDataBlob.signTransferWithScheduleContext.displayStr;
     pairIndex++;
 
     // Create the page content
@@ -1027,16 +1068,19 @@ void uiSignScheduledTransferPairFlowSignDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Scheduled release",
                        NULL,  // No subtitle
-                       "Sign transaction", review_choice_sign);
+                       "Sign transaction",
+                       review_choice_sign);
 }
 
 void uiVerifyAddress(volatile unsigned int* flags) {
     uint8_t index = 0;
     pairs[index].item = "Identity";
-    pairs[index].value = (char*)global.verifyAddressContext.display;
+    pairs[index].value = (char*) global.verifyAddressContext.display;
     index++;
 
     // Create the page content
@@ -1047,8 +1091,10 @@ void uiVerifyAddress(volatile unsigned int* flags) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseAddressReview((char*)global.verifyAddressContext.address,
-                              &content, &ICON_APP_HOME, "Verify Address",
+    nbgl_useCaseAddressReview((char*) global.verifyAddressContext.address,
+                              &content,
+                              &ICON_APP_HOME,
+                              "Verify Address",
                               NULL,  // No subtitle
                               review_verify_address);
     *flags |= IO_ASYNCH_REPLY;
@@ -1057,15 +1103,14 @@ void uiVerifyAddress(volatile unsigned int* flags) {
 void startInitialScheduledTransferDisplay(bool displayMemo) {
     uint8_t index = 0;
     pairs[index].item = "Sender";
-    pairs[index].value = (char*)global_account_sender.sender;
+    pairs[index].value = (char*) global_account_sender.sender;
     index++;
     pairs[index].item = "Recipient";
-    pairs[index].value =
-        (char*)global.withDataBlob.signTransferWithScheduleContext.displayStr;
+    pairs[index].value = (char*) global.withDataBlob.signTransferWithScheduleContext.displayStr;
     index++;
     if (displayMemo) {
         pairs[index].item = "Memo";
-        pairs[index].value = (char*)global.withDataBlob.cborContext.display;
+        pairs[index].value = (char*) global.withDataBlob.cborContext.display;
         index++;
     }
     // Create the page content
@@ -1076,7 +1121,9 @@ void startInitialScheduledTransferDisplay(bool displayMemo) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReviewLight(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReviewLight(TYPE_TRANSACTION,
+                            &content,
+                            &ICON_APP_HOME,
                             "Review Transfer with schedule",
                             NULL,  // No subtitle
                             "Continue with transfer",
@@ -1085,9 +1132,9 @@ void startInitialScheduledTransferDisplay(bool displayMemo) {
 
 void uiDeployModuleDisplay(void) {
     pairs[0].item = "Sender";
-    pairs[0].value = (char*)global_account_sender.sender;
+    pairs[0].value = (char*) global_account_sender.sender;
     pairs[1].item = "Version";
-    pairs[1].value = (char*)global.deployModule.versionDisplay;
+    pairs[1].value = (char*) global.deployModule.versionDisplay;
 
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -1097,7 +1144,9 @@ void uiDeployModuleDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto deploy module",
                        NULL,  // No subtitle
                        "Sign transaction\nto deploy module",
@@ -1107,16 +1156,16 @@ void uiDeployModuleDisplay(void) {
 void uiUpdateContractDisplay(void) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
     pairs[pairIndex].item = "Amount";
-    pairs[pairIndex].value = (char*)global.updateContract.amountDisplay;
+    pairs[pairIndex].value = (char*) global.updateContract.amountDisplay;
     pairIndex++;
     pairs[pairIndex].item = "Index";
-    pairs[pairIndex].value = (char*)global.updateContract.indexDisplay;
+    pairs[pairIndex].value = (char*) global.updateContract.indexDisplay;
     pairIndex++;
     pairs[pairIndex].item = "Sub index";
-    pairs[pairIndex].value = (char*)global.updateContract.subIndexDisplay;
+    pairs[pairIndex].value = (char*) global.updateContract.subIndexDisplay;
     pairIndex++;
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -1126,7 +1175,9 @@ void uiUpdateContractDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto update contract",
                        NULL,  // No subtitle
                        "Sign transaction\nto update contract",
@@ -1136,13 +1187,13 @@ void uiUpdateContractDisplay(void) {
 void uiInitContractDisplay(void) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char*)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
     pairs[pairIndex].item = "Amount";
-    pairs[pairIndex].value = (char*)global.initContract.amountDisplay;
+    pairs[pairIndex].value = (char*) global.initContract.amountDisplay;
     pairIndex++;
     pairs[pairIndex].item = "Module ref";
-    pairs[pairIndex].value = (char*)global.initContract.moduleRefDisplay;
+    pairs[pairIndex].value = (char*) global.initContract.moduleRefDisplay;
     pairIndex++;
     // Create the page content
     nbgl_contentTagValueList_t content;
@@ -1152,7 +1203,9 @@ void uiInitContractDisplay(void) {
     content.nbMaxLinesForValue = 0;
     content.startIndex = 0;
     // Setup the review screen
-    nbgl_useCaseReview(TYPE_TRANSACTION, &content, &ICON_APP_HOME,
+    nbgl_useCaseReview(TYPE_TRANSACTION,
+                       &content,
+                       &ICON_APP_HOME,
                        "Review Transaction \nto update contract",
                        NULL,  // No subtitle
                        "Sign transaction\nto update contract",
