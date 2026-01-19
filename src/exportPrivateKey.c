@@ -1,11 +1,12 @@
 #include "globals.h"
 
-// This class allows for the export of a number of very specific private keys. These private keys
-// are made exportable as they are used in computations that are not feasible to carry out on the
-// Ledger device. The key derivation paths that are allowed are restricted so that it is not
-// possible to export keys that are used for signing.
+// This class allows for the export of a number of very specific private keys.
+// These private keys are made exportable as they are used in computations that
+// are not feasible to carry out on the Ledger device. The key derivation paths
+// that are allowed are restricted so that it is not possible to export keys
+// that are used for signing.
 static const uint32_t HARDENED_OFFSET = 0x80000000;
-static exportPrivateKeyContext_t *ctx = &global.exportPrivateKeyContext;
+static exportPrivateKeyContext_t* ctx = &global.exportPrivateKeyContext;
 
 void exportPrivateKeySeed(void) {
     cx_ecfp_private_key_t privateKey;
@@ -42,9 +43,7 @@ void exportPrivateKeySeed(void) {
 
             sendSuccess(tx);
         }
-        FINALLY {
-            explicit_bzero(&privateKey, sizeof(privateKey));
-        }
+        FINALLY { explicit_bzero(&privateKey, sizeof(privateKey)); }
     }
     END_TRY;
 }
@@ -63,7 +62,8 @@ void exportPrivateKeyBls(void) {
                 lastSubPathIndex = 5;
             }
             ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
-            getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey, sizeof(privateKey));
+            getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey,
+                             sizeof(privateKey));
             uint8_t tx = 0;
             if (sizeof(privateKey) > sizeof(G_io_apdu_buffer)) {
                 THROW(ERROR_BUFFER_OVERFLOW);
@@ -78,7 +78,8 @@ void exportPrivateKeyBls(void) {
                     lastSubPath = LEGACY_ID_CRED_SEC;
                 }
                 ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
-                getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey, sizeof(privateKey));
+                getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey,
+                                 sizeof(privateKey));
                 if (sizeof(privateKey) + tx > sizeof(G_io_apdu_buffer)) {
                     THROW(ERROR_BUFFER_OVERFLOW);
                 }
@@ -88,9 +89,7 @@ void exportPrivateKeyBls(void) {
 
             sendSuccess(tx);
         }
-        FINALLY {
-            explicit_bzero(&privateKey, sizeof(privateKey));
-        }
+        FINALLY { explicit_bzero(&privateKey, sizeof(privateKey)); }
     }
     END_TRY;
 }
@@ -107,7 +106,7 @@ void exportPrivateKey(void) {
 #define NORMAL_ACCOUNTS 0
 
 // Export the PRF key
-#define P1_PRF_KEY          0x00
+#define P1_PRF_KEY 0x00
 #define P1_PRF_KEY_RECOVERY 0x01
 // Export the PRF key and the IdCredSec
 #define P1_BOTH 0x02
@@ -117,12 +116,9 @@ void exportPrivateKey(void) {
 // Export the BLS keys
 #define P2_KEY 0x02
 
-void handleExportPrivateKey(uint8_t *dataBuffer,
-                            uint8_t p1,
-                            uint8_t p2,
-                            uint8_t lc,
-                            bool legacyDerivationPath,
-                            volatile unsigned int *flags) {
+void handleExportPrivateKey(uint8_t* dataBuffer, uint8_t p1, uint8_t p2,
+                            uint8_t lc, bool legacyDerivationPath,
+                            volatile unsigned int* flags) {
     if ((p1 != P1_BOTH && p1 != P1_PRF_KEY && p1 != P1_PRF_KEY_RECOVERY) ||
         (p2 != P2_KEY && p2 != P2_SEED)) {
         THROW(ERROR_INVALID_PARAM);
@@ -145,13 +141,12 @@ void handleExportPrivateKey(uint8_t *dataBuffer,
         THROW(ERROR_INVALID_PATH);
     }
     identity = U4BE(dataBuffer, offset);
-    uint32_t *keyDerivationPath;
+    uint32_t* keyDerivationPath;
     size_t pathLength;
     if (ctx->isNewPath) {
-        keyDerivationPath = (uint32_t[4]){NEW_PURPOSE | HARDENED_OFFSET,
-                                          NEW_COIN_TYPE | HARDENED_OFFSET,
-                                          identity_provider | HARDENED_OFFSET,
-                                          identity | HARDENED_OFFSET};
+        keyDerivationPath = (uint32_t[4]){
+            NEW_PURPOSE | HARDENED_OFFSET, NEW_COIN_TYPE | HARDENED_OFFSET,
+            identity_provider | HARDENED_OFFSET, identity | HARDENED_OFFSET};
         pathLength = 4;
     } else {
         keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
@@ -172,28 +167,39 @@ void handleExportPrivateKey(uint8_t *dataBuffer,
     if (ctx->isNewPath) {
         memmove(ctx->display_credid, "IDP#", 4);
         offset += 4;
-        offset += bin2dec(ctx->display_credid + offset,
-                          sizeof(ctx->display_credid) - offset,
-                          identity_provider);
+        offset +=
+            bin2dec(ctx->display_credid + offset,
+                    sizeof(ctx->display_credid) - offset, identity_provider);
         // Remove the null terminator
         offset -= 1;
     }
 
     memmove(ctx->display_credid + offset, " ID#", 4);
     offset += 4;
-    bin2dec(ctx->display_credid + offset, sizeof(ctx->display_credid) - offset, identity);
+    bin2dec(ctx->display_credid + offset, sizeof(ctx->display_credid) - offset,
+            identity);
 
-    memmove(ctx->display_credid_title, "Credentials ID", EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN);
-    memmove(ctx->display_review_operation,
-            "Review operation",
+    memmove(ctx->display_credid_title, "Credentials ID",
+            EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN);
+    memmove(ctx->display_review_operation, "Review operation",
             EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN);
-    memmove(ctx->display_sign, "Sign operation", EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN);
+    memmove(ctx->display_sign, "Sign operation",
+            EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN);
     if (p1 == P1_BOTH) {
-        memmove(ctx->display_review_verb, "to create credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
+        memmove(ctx->display_sign_verb, "to create credentials?",
+                EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb, "to create credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     } else if (p1 == P1_PRF_KEY_RECOVERY) {
-        memmove(ctx->display_review_verb, "to recover credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
+        memmove(ctx->display_sign_verb, "to recover credentials?",
+                EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb, "to recover credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     } else if (p1 == P1_PRF_KEY) {
-        memmove(ctx->display_review_verb, "to decrypt credentials", EXPORT_PRIVATE_KEY_VERB_LEN);
+        memmove(ctx->display_sign_verb, "to decrypt credentials?",
+                EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb, "to decrypt credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     }
 
     uiExportPrivateKey(flags);
