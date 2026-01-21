@@ -1,4 +1,7 @@
 #pragma once
+
+#include <stdint.h>
+#include <stdbool.h>
 /**
  * Handles the export of private keys that are allowed to leave the device.
  * The export paths are restricted so that the method cannot access any account paths.
@@ -15,14 +18,27 @@ void handleExportPrivateKey(uint8_t *dataBuffer,
                             bool legacyDerivationPath,
                             volatile unsigned int *flags);
 
+#define EXPORT_PRIVATE_KEY_TITLE_BUFF_LEN       40
+#define EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN 17
+#define EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN   15
+#define EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN     15
+#define EXPORT_PRIVATE_KEY_CREDID_LEN           22
+#define EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN      23
+#define EXPORT_PRIVATE_KEY_SIGN_VERB_LEN        EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN + 1
+
 typedef struct {
-    uint8_t displayHeader[20];
-    uint8_t display[22];
+    uint8_t display_review_operation[EXPORT_PRIVATE_KEY_TITLE_BUFF_LEN];
+    uint8_t display_review_verb[EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN];
+    uint8_t display_sign_verb[EXPORT_PRIVATE_KEY_SIGN_VERB_LEN + 1];
+    uint8_t display_credid_title[EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN];
+    uint8_t display_credid[EXPORT_PRIVATE_KEY_CREDID_LEN];
+    uint8_t display_sign[EXPORT_PRIVATE_KEY_TITLE_BUFF_LEN];
     bool exportBoth;
     bool exportSeed;
     uint32_t path[6];
     uint8_t pathLength;
     bool isNewPath;
+
 } exportPrivateKeyContext_t;
 
 void uiExportPrivateKey(volatile unsigned int *flags);
