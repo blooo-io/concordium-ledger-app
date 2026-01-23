@@ -69,7 +69,6 @@
  */
 #define APPNAME_LEN (sizeof(APPNAME) - 1)
 
-
 /**
  * Maximum length of application name.
  */
