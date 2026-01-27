@@ -9,7 +9,7 @@
 // that are allowed are restricted so that it is not possible to export keys
 // that are used for signing.
 static const uint32_t HARDENED_OFFSET = 0x80000000;
-static exportPrivateKeyContext_t* ctx = &global.exportPrivateKeyContext;
+static exportPrivateKeyContext_t *ctx = &global.exportPrivateKeyContext;
 
 void exportPrivateKeySeed(void) {
     cx_ecfp_private_key_t privateKey;
@@ -115,7 +115,7 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
     if ((p1 != P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC && p1 != P1_LEGACY_PRF_KEY &&
          p1 != P1_LEGACY_PRF_KEY_RECOVERY) ||
         (p2 != P2_LEGACY_KEY && p2 != P2_LEGACY_SEED)) {
-            THROW(ERROR_INVALID_PARAM);
+        THROW(ERROR_INVALID_PARAM);
     }
     size_t offset = 0;
 
@@ -126,7 +126,7 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
         THROW(ERROR_INVALID_PATH);
     }
     identity = U4BE(dataBuffer, offset);
-    uint32_t* keyDerivationPath;
+    uint32_t *keyDerivationPath;
     size_t pathLength;
     keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
                                       LEGACY_COIN_TYPE | HARDENED_OFFSET,

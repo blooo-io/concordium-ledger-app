@@ -410,7 +410,7 @@ size_t hashAndLoadU64Ratio(uint8_t *cdata, uint8_t *dst, uint8_t sizeOfDst) {
 bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, size_t output_size) {
     // Hex string must have even length (each byte = 2 hex chars)
     if (hex_len % 2 != 0) {
-        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int) hex_len);
         return false;
     }
 
@@ -420,8 +420,8 @@ bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, s
     // Check if we have enough space in output buffer
     if (byte_count > output_size) {
         PRINTF("Output buffer too small: need %d bytes, have %d\n",
-               (int)byte_count,
-               (int)output_size);
+               (int) byte_count,
+               (int) output_size);
         return false;
     }
 
@@ -433,7 +433,7 @@ bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, s
 
         // Validate hex characters
         if (!is_hex_digit(high) || !is_hex_digit(low)) {
-            PRINTF("Invalid hex character at position %d: '%c%c'\n", (int)i, high, low);
+            PRINTF("Invalid hex character at position %d: '%c%c'\n", (int) i, high, low);
             return false;
         }
 
@@ -464,7 +464,7 @@ bool hex_string_to_bytes(const char *hex_str, size_t hex_len, uint8_t *output, s
 bool hex_string_to_ascii(const char *hex_str, size_t hex_len, char *output, size_t output_size) {
     // Hex string must have even length (each byte = 2 hex chars)
     if (hex_len % 2 != 0) {
-        PRINTF("Invalid hex string length: %d (must be even)\n", (int)hex_len);
+        PRINTF("Invalid hex string length: %d (must be even)\n", (int) hex_len);
         return false;
     }
 
@@ -474,8 +474,8 @@ bool hex_string_to_ascii(const char *hex_str, size_t hex_len, char *output, size
     // Check if we have enough space in output buffer
     if (byte_count > output_size) {
         PRINTF("Output buffer too small: need %d bytes, have %d\n",
-               (int)byte_count,
-               (int)output_size);
+               (int) byte_count,
+               (int) output_size);
         return false;
     }
     uint8_t bytes[100];
@@ -486,7 +486,7 @@ bool hex_string_to_ascii(const char *hex_str, size_t hex_len, char *output, size
 
     // Actually convert to text (not nibbles!)
     for (size_t i = 0; i < byte_count; i++) {
-        output[i] = (char)bytes[i];
+        output[i] = (char) bytes[i];
     }
     output[byte_count] = '\0';  // Null terminate
 

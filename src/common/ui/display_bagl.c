@@ -89,7 +89,6 @@ UX_STEP_CB(ux_sign_flow_shared_decline,
            {&C_icon_crossmark, "Decline to", "sign transaction"});
 UX_FLOW(ux_sign_flow_shared, &ux_sign_flow_shared_sign, &ux_sign_flow_shared_decline);
 
-
 UX_STEP_NOCB(ux_export_private_key_purpose_step,
              pnn,
              {&C_app_concordium_16px,
@@ -132,14 +131,14 @@ UX_STEP_NOCB(ux_export_private_key_new_path_credid_step,
              {
                  .title = (char *) global.exportPrivateKeyContext.display_credid_title,
                  .text = (char *) global.exportPrivateKeyContext.display_credid,
-                });
+             });
 UX_STEP_CB(ux_export_private_key_new_path_approve_step,
-            pb,
-            sendPrivateKeysNewPath(),
-            {
-                &C_icon_validate_14,
-                (char *) global.exportPrivateKeyContext.display_sign,
-            });
+           pb,
+           sendPrivateKeysNewPath(),
+           {
+               &C_icon_validate_14,
+               (char *) global.exportPrivateKeyContext.display_sign,
+           });
 UX_STEP_CB(ux_export_private_key_new_path_reject_step,
            pb,
            sendUserRejection(),
@@ -940,7 +939,7 @@ void uiUpdateContractDisplay() {
 // Token ID
 UX_STEP_NOCB(ux_plt_token_id_step,
              bnnn_paging,
-             {.title = "Token ID", .text = (char *)global.withDataBlob.signPLTContext.tokenId});
+             {.title = "Token ID", .text = (char *) global.withDataBlob.signPLTContext.tokenId});
 
 // Dynamic content buffers for individual operation screens - reduced size for memory efficiency
 // Only allocate for max 5 operations (structured display limit)
@@ -953,113 +952,113 @@ static char plt_target_titles[5][32];
 UX_STEP_NOCB(ux_plt_op1_type_step,
              bnnn_paging,
              {.title = plt_operation_titles[0],
-              .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0]
+              .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[0]
                           .operationType});
 UX_STEP_NOCB(
     ux_plt_op1_amount_step,
     bnnn_paging,
     {.title = plt_amount_titles[0],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0].amount});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[0].amount});
 UX_STEP_NOCB(
     ux_plt_op1_recipient_step,
     bnnn_paging,
     {.title = plt_recipient_titles[0],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0].recipient});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[0].recipient});
 UX_STEP_NOCB(
     ux_plt_op1_target_step,
     bnnn_paging,
     {.title = plt_target_titles[0],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[0].target});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[0].target});
 
 UX_STEP_NOCB(ux_plt_op2_type_step,
              bnnn_paging,
              {.title = plt_operation_titles[1],
-              .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1]
+              .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[1]
                           .operationType});
 UX_STEP_NOCB(
     ux_plt_op2_amount_step,
     bnnn_paging,
     {.title = plt_amount_titles[1],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1].amount});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[1].amount});
 UX_STEP_NOCB(
     ux_plt_op2_recipient_step,
     bnnn_paging,
     {.title = plt_recipient_titles[1],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1].recipient});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[1].recipient});
 UX_STEP_NOCB(
     ux_plt_op2_target_step,
     bnnn_paging,
     {.title = plt_target_titles[1],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[1].target});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[1].target});
 
 UX_STEP_NOCB(ux_plt_op3_type_step,
              bnnn_paging,
              {.title = plt_operation_titles[2],
-              .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2]
+              .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[2]
                           .operationType});
 UX_STEP_NOCB(
     ux_plt_op3_amount_step,
     bnnn_paging,
     {.title = plt_amount_titles[2],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2].amount});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[2].amount});
 UX_STEP_NOCB(
     ux_plt_op3_recipient_step,
     bnnn_paging,
     {.title = plt_recipient_titles[2],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2].recipient});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[2].recipient});
 UX_STEP_NOCB(
     ux_plt_op3_target_step,
     bnnn_paging,
     {.title = plt_target_titles[2],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[2].target});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[2].target});
 
 UX_STEP_NOCB(ux_plt_op4_type_step,
              bnnn_paging,
              {.title = plt_operation_titles[3],
-              .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3]
+              .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[3]
                           .operationType});
 UX_STEP_NOCB(
     ux_plt_op4_amount_step,
     bnnn_paging,
     {.title = plt_amount_titles[3],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3].amount});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[3].amount});
 UX_STEP_NOCB(
     ux_plt_op4_recipient_step,
     bnnn_paging,
     {.title = plt_recipient_titles[3],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3].recipient});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[3].recipient});
 UX_STEP_NOCB(
     ux_plt_op4_target_step,
     bnnn_paging,
     {.title = plt_target_titles[3],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[3].target});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[3].target});
 
 UX_STEP_NOCB(ux_plt_op5_type_step,
              bnnn_paging,
              {.title = plt_operation_titles[4],
-              .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4]
+              .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[4]
                           .operationType});
 UX_STEP_NOCB(
     ux_plt_op5_amount_step,
     bnnn_paging,
     {.title = plt_amount_titles[4],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4].amount});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[4].amount});
 UX_STEP_NOCB(
     ux_plt_op5_recipient_step,
     bnnn_paging,
     {.title = plt_recipient_titles[4],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4].recipient});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[4].recipient});
 UX_STEP_NOCB(
     ux_plt_op5_target_step,
     bnnn_paging,
     {.title = plt_target_titles[4],
-     .text = (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[4].target});
+     .text = (char *) global.withDataBlob.signPLTContext.parsedOperation.operations[4].target});
 
 // Fallback - Raw operation display
 UX_STEP_NOCB(ux_plt_operation_raw_step,
              bnnn_paging,
              {.title = "PLT Operations",
-              .text = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay});
+              .text = (char *) global.withDataBlob.signPLTContext.pltOperationDisplay});
 
 // Use UX_FLOW macros for proper flow definitions
 UX_FLOW(ux_plt_flow_1_op,

@@ -4,7 +4,7 @@
 
 accountSender_t global_account_sender;
 static nbgl_contentTagValue_t pairs[32];  // Increased to handle multiple PLT operations
-static signTransferWithScheduleContext_t *ctx_sign_transfer_with_schedule =
+static signTransferWithScheduleContext_t* ctx_sign_transfer_with_schedule =
     &global.withDataBlob.signTransferWithScheduleContext;
 
 static void review_choice(bool confirm) {
@@ -129,7 +129,6 @@ void uiExportPrivateKey(volatile unsigned int* flags) {
     content.startIndex = 0;
     content.wrapping = true;
 
-
     nbgl_useCaseReview(TYPE_OPERATION,
                        &content,
                        &ICON_APP_HOME,
@@ -140,7 +139,7 @@ void uiExportPrivateKey(volatile unsigned int* flags) {
     *flags |= IO_ASYNCH_REPLY;
 }
 
-void uiExportPrivateKeysNewPath(volatile unsigned int *flags) {
+void uiExportPrivateKeysNewPath(volatile unsigned int* flags) {
     // Create tag-value pairs for the content
     uint8_t pairIndex = 0;
 
@@ -1265,10 +1264,10 @@ void uiInitContractDisplay(void) {
 void uiPltOperationDisplay(void) {
     uint8_t pairIndex = 0;
     pairs[pairIndex].item = "Sender";
-    pairs[pairIndex].value = (char *)global_account_sender.sender;
+    pairs[pairIndex].value = (char*) global_account_sender.sender;
     pairIndex++;
     pairs[pairIndex].item = "Token ID";
-    pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.tokenId;
+    pairs[pairIndex].value = (char*) global.withDataBlob.signPLTContext.tokenId;
     pairIndex++;
 
     // Use parsed operation data if available, otherwise fall back to raw display
@@ -1281,7 +1280,7 @@ void uiPltOperationDisplay(void) {
             PRINTF("Too many operations (%d) for individual display, using JSON fallback\n",
                    opCount);
             pairs[pairIndex].item = "PLT Operation(s)";
-            pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
+            pairs[pairIndex].value = (char*) global.withDataBlob.signPLTContext.pltOperationDisplay;
             pairIndex++;
         } else {
             static char opTitles[MAX_PLT_OPERATIONS][32];
@@ -1301,7 +1300,7 @@ void uiPltOperationDisplay(void) {
                 if (pairIndex < 32) {
                     pairs[pairIndex].item = opTitles[i];
                     pairs[pairIndex].value =
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                        (char*) global.withDataBlob.signPLTContext.parsedOperation.operations[i]
                             .operationType;
                     pairIndex++;
                 } else {
@@ -1346,7 +1345,7 @@ void uiPltOperationDisplay(void) {
                     }
                     pairs[pairIndex].item = amountTitles[i];
                     pairs[pairIndex].value =
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                        (char*) global.withDataBlob.signPLTContext.parsedOperation.operations[i]
                             .amount;
                     pairIndex++;
                 }
@@ -1366,7 +1365,7 @@ void uiPltOperationDisplay(void) {
                     }
                     pairs[pairIndex].item = recipientTitles[i];
                     pairs[pairIndex].value =
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                        (char*) global.withDataBlob.signPLTContext.parsedOperation.operations[i]
                             .recipient;
                     pairIndex++;
                 }
@@ -1383,7 +1382,7 @@ void uiPltOperationDisplay(void) {
                     }
                     pairs[pairIndex].item = targetTitles[i];
                     pairs[pairIndex].value =
-                        (char *)global.withDataBlob.signPLTContext.parsedOperation.operations[i]
+                        (char*) global.withDataBlob.signPLTContext.parsedOperation.operations[i]
                             .target;
                     pairIndex++;
                 }
@@ -1394,7 +1393,7 @@ void uiPltOperationDisplay(void) {
     } else {
         // Fallback to raw display
         pairs[pairIndex].item = "PLT Operation(s)";
-        pairs[pairIndex].value = (char *)global.withDataBlob.signPLTContext.pltOperationDisplay;
+        pairs[pairIndex].value = (char*) global.withDataBlob.signPLTContext.pltOperationDisplay;
         pairIndex++;
         PRINTF("Using fallback display - pltOperationDisplay: %s\n",
                global.withDataBlob.signPLTContext.pltOperationDisplay);

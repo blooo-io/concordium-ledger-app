@@ -57,7 +57,6 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
 #define EXPORT_PRIVATE_KEY_SIGN_VERB_LEN        EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN + 1
 
 typedef struct {
-
     uint8_t display_review_operation[EXPORT_PRIVATE_KEY_TITLE_BUFF_LEN];
     uint8_t display_review_verb[EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN];
     uint8_t display_sign_verb[EXPORT_PRIVATE_KEY_SIGN_VERB_LEN + 1];
