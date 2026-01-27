@@ -3,12 +3,13 @@
 #include "numberHelpers.h"
 #include "exportPrivateKey.h"
 
-// This class allows for the export of a number of very specific private keys. These private keys
-// are made exportable as they are used in computations that are not feasible to carry out on the
-// Ledger device. The key derivation paths that are allowed are restricted so that it is not
-// possible to export keys that are used for signing.
+// This class allows for the export of a number of very specific private keys.
+// These private keys are made exportable as they are used in computations that
+// are not feasible to carry out on the Ledger device. The key derivation paths
+// that are allowed are restricted so that it is not possible to export keys
+// that are used for signing.
 static const uint32_t HARDENED_OFFSET = 0x80000000;
-static exportPrivateKeyContext_t *ctx = &global.exportPrivateKeyContext;
+static exportPrivateKeyContext_t* ctx = &global.exportPrivateKeyContext;
 
 void exportPrivateKeySeed(void) {
     cx_ecfp_private_key_t privateKey;
@@ -114,7 +115,7 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
     if ((p1 != P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC && p1 != P1_LEGACY_PRF_KEY &&
          p1 != P1_LEGACY_PRF_KEY_RECOVERY) ||
         (p2 != P2_LEGACY_KEY && p2 != P2_LEGACY_SEED)) {
-        THROW(ERROR_INVALID_PARAM);
+            THROW(ERROR_INVALID_PARAM);
     }
     size_t offset = 0;
 
@@ -125,7 +126,7 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
         THROW(ERROR_INVALID_PATH);
     }
     identity = U4BE(dataBuffer, offset);
-    uint32_t *keyDerivationPath;
+    uint32_t* keyDerivationPath;
     size_t pathLength;
     keyDerivationPath = (uint32_t[5]){LEGACY_PURPOSE | HARDENED_OFFSET,
                                       LEGACY_COIN_TYPE | HARDENED_OFFSET,
@@ -141,16 +142,36 @@ void handleExportPrivateKeyLegacyPath(uint8_t *dataBuffer,
 
     // Reset the offset to 0
     offset = 0;
-    memmove(ctx->display + offset, " ID#", 4);
-    offset += 4;
-    bin2dec(ctx->display + offset, sizeof(ctx->display) - offset, identity);
+
+    memmove(ctx->display_credid + offset, "ID#", 3);
+    offset += 3;
+    bin2dec(ctx->display_credid + offset, sizeof(ctx->display_credid) - offset, identity);
+
+    memmove(ctx->display_credid_title, "Credentials ID", EXPORT_PRIVATE_KEY_CREDID_TITLE_LEN);
+    memmove(ctx->display_review_operation,
+            "Review operation",
+            EXPORT_PRIVATE_KEY_REVIEW_OPERATION_LEN);
+    memmove(ctx->display_sign, "Sign operation", EXPORT_PRIVATE_KEY_SIGN_OPERATION_LEN);
 
     if (p1 == P1_LEGACY_PRF_KEY_AND_ID_CRED_SEC) {
-        memmove(ctx->displayHeader, "Create credential", 18);
+        memmove(ctx->display_sign_verb, "to create credentials?", EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb,
+                "to create credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     } else if (p1 == P1_LEGACY_PRF_KEY_RECOVERY) {
-        memmove(ctx->displayHeader, "Recover credentials", 20);
+        memmove(ctx->display_sign_verb,
+                "to recover credentials?",
+                EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb,
+                "to recover credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     } else if (p1 == P1_LEGACY_PRF_KEY) {
-        memmove(ctx->displayHeader, "Decrypt", 8);
+        memmove(ctx->display_sign_verb,
+                "to decrypt credentials?",
+                EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        memmove(ctx->display_review_verb,
+                "to decrypt credentials",
+                EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
     }
 
     uiExportPrivateKey(flags);
