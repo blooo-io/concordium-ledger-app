@@ -41,6 +41,8 @@
 
 #define INS_EXPORT_PRIVATE_KEY_NEW 0x37
 
+#define INS_APP_VERSION 0x40
+
 int handler(uint8_t INS,
             uint8_t *cdata,
             uint8_t p1,

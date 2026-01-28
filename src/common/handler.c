@@ -1,5 +1,7 @@
 #include "globals.h"
 #include "getAppName.h"
+#include "get_app_version.h"
+#include <status_words.h>
 
 int handler(uint8_t INS,
             uint8_t *cdata,
@@ -83,6 +85,15 @@ int handler(uint8_t INS,
         case INS_UPDATE_CONTRACT:
             LEDGER_ASSERT(cdata != NULL, "NULL cdata");
             handleUpdateContract(cdata, p1, lc);
+            break;
+        case INS_APP_VERSION:
+            LEDGER_ASSERT(cdata == NULL, "NULL cdata");
+
+            if (p1 != 0 || p2 != 0) {
+                return io_send_sw(SWO_INCORRECT_P1_P2);
+            }
+
+            handler_get_version();
             break;
         default:
             THROW(ERROR_INVALID_INSTRUCTION);
