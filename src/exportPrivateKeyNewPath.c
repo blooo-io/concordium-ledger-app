@@ -199,6 +199,11 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
         /// Set the display header
         memmove(ctx->display_review_verb, "to create account", EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
         memmove(ctx->display_sign_verb, "to create account?", EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
+        /// Add the account to the display
+        offset -= 1;
+        memmove(ctx->display_credid + offset, " ACCOUNT#", 9);
+        offset += 9;
+        bin2dec(ctx->display_credid + offset, sizeof(ctx->display_credid) - offset, account);
     } else if (p1 == P1_ID_RECOVERY) {
         memmove(ctx->display_review_verb,
                 "to recover credentials",
@@ -219,7 +224,6 @@ void handleExportPrivateKeyNewPath(uint8_t *dataBuffer,
         memmove(ctx->display_review_verb, "to create ZK proof", EXPORT_PRIVATE_KEY_REVIEW_VERB_LEN);
         memmove(ctx->display_sign_verb, "to create ZK proof?", EXPORT_PRIVATE_KEY_SIGN_VERB_LEN);
         /// Add the account to the display
-        // Remove the null terminator from the display to add the account
         offset -= 1;
         memmove(ctx->display_credid + offset, " ACCOUNT#", 9);
         offset += 9;
