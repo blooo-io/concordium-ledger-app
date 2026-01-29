@@ -15,15 +15,8 @@ void exportPrivateKeySeed(void) {
     cx_ecfp_private_key_t privateKey;
     BEGIN_TRY {
         TRY {
-            uint8_t lastSubPath;
-            uint8_t lastSubPathIndex;
-            if (ctx->isNewPath) {
-                lastSubPath = NEW_PRF_KEY;
-                lastSubPathIndex = 4;
-            } else {
-                lastSubPath = LEGACY_PRF_KEY;
-                lastSubPathIndex = 5;
-            }
+            uint8_t lastSubPath = LEGACY_PRF_KEY;
+            uint8_t lastSubPathIndex = 5;
             ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
             getPrivateKey(ctx->path, lastSubPathIndex + 1, &privateKey);
             uint8_t tx = 0;
@@ -32,11 +25,7 @@ void exportPrivateKeySeed(void) {
             }
 
             if (ctx->exportBoth) {
-                if (ctx->isNewPath) {
-                    lastSubPath = NEW_ID_CRED_SEC;
-                } else {
-                    lastSubPath = LEGACY_ID_CRED_SEC;
-                }
+                lastSubPath = LEGACY_ID_CRED_SEC;
                 ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
                 getPrivateKey(ctx->path, lastSubPathIndex + 1, &privateKey);
                 for (int i = 0; i < 32; i++) {
@@ -57,15 +46,9 @@ void exportPrivateKeyBls(void) {
     uint8_t privateKey[COMMON_PRIVATE_KEY_SIZE];
     BEGIN_TRY {
         TRY {
-            uint8_t lastSubPath;
-            uint8_t lastSubPathIndex;
-            if (ctx->isNewPath) {
-                lastSubPath = NEW_PRF_KEY;
-                lastSubPathIndex = 4;
-            } else {
-                lastSubPath = LEGACY_PRF_KEY;
-                lastSubPathIndex = 5;
-            }
+            uint8_t lastSubPath = LEGACY_PRF_KEY;
+            uint8_t lastSubPathIndex = 5;
+
             ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
             getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey, sizeof(privateKey));
             uint8_t tx = 0;
@@ -76,11 +59,7 @@ void exportPrivateKeyBls(void) {
             tx += sizeof(privateKey);
 
             if (ctx->exportBoth) {
-                if (ctx->isNewPath) {
-                    lastSubPath = NEW_ID_CRED_SEC;
-                } else {
-                    lastSubPath = LEGACY_ID_CRED_SEC;
-                }
+                lastSubPath = LEGACY_ID_CRED_SEC;
                 ctx->path[lastSubPathIndex] = lastSubPath | HARDENED_OFFSET;
                 getBlsPrivateKey(ctx->path, lastSubPathIndex + 1, privateKey, sizeof(privateKey));
                 if (sizeof(privateKey) + tx > sizeof(G_io_apdu_buffer)) {
